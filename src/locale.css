@@ -1,0 +1,21 @@
+.language-select{display:flex;align-items:center;gap:12px;color:var(--ink);font-size:14px;min-width:0}
+.language-select>svg{flex-shrink:0;color:var(--secondary)}
+.language-select select{margin-left:auto;min-height:44px;min-width:130px;max-width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--soft);color:var(--ink);font:inherit;cursor:pointer}
+.language-select.is-compact{position:absolute;right:7%;top:38px;gap:8px}
+.language-select.is-compact select{min-width:110px;background:transparent}
+html[lang=en] .auth-intro>p:last-child{white-space:normal;line-height:1.7}
+html[lang=en] .class-item small>span{display:block;margin-left:0}
+html[lang=en] .chat-heading{flex-wrap:wrap}
+html[lang=en] .chat-heading h2{min-width:0}
+html[lang=en] .importance-toggle-wrap{flex-shrink:0}
+@media(max-width:700px){
+  .language-select select{font-size:16px}
+  .language-select.is-compact{top:24px;right:24px}
+  html[lang=en] .panel-heading{flex-wrap:wrap}
+  html[lang=en] .audio-player .record-controls{min-width:0}
+  html[lang=en] .audio-player .primary,html[lang=en] .audio-player .pause-button{white-space:normal;text-align:left}
+  html[lang=en] .settings-device-controls{flex-wrap:wrap}
+  html[lang=en] .settings-device-select{flex-basis:100%}
+  html[lang=en] .code-row{flex-wrap:wrap}
+  html[lang=en] .code-row input{flex-basis:100%;width:100%}
+}

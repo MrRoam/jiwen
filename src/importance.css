@@ -1,0 +1,21 @@
+/* A 方案：颜色不改变字重和排版，选文与回放样式始终优先。 */
+.transcript-sentence.importance-high{background:#fff0ac;color:#26342f;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.transcript-sentence.selected{background:#e8efdf;color:#26342f}
+.transcript-sentence.current{background:#dcebd3;color:#244b3a}
+.transcript-sentence::selection{background:#c8dfed;color:#172f3a}
+.importance-toggle-wrap{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+.importance-toggle{display:flex;align-items:center;gap:8px;position:relative;cursor:pointer;font-size:12px;color:#425a49;min-height:40px}
+.importance-toggle input{position:absolute;right:0;width:32px;height:24px;opacity:0;cursor:pointer;margin:0}
+.importance-toggle i{width:30px;height:18px;border-radius:12px;background:#a4aca5;pointer-events:none;position:relative}
+.importance-toggle i:after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px}
+.importance-toggle input:checked+i{background:#315e4b}
+.importance-toggle input:checked+i:after{left:14px}
+.importance-toggle input:focus-visible+i{outline:2px solid #315e4b;outline-offset:3px}
+.importance-toggle:has(input:disabled){cursor:default;color:#626b65}
+.importance-config{border:0;background:none;color:#626b65;font-size:11px;padding:5px;min-height:40px}
+.importance-details{flex-shrink:0;padding:6px 20px;border-bottom:1px solid #e5e9e3;max-height:min(40vh,260px);overflow:auto}
+.importance-status{display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:12px;line-height:1.65;color:#626b65;padding:6px 0;user-select:none}
+.importance-status span{min-width:0;overflow-wrap:anywhere}
+.importance-status button{flex-shrink:0;border:0;background:none;color:#315e4b;font-size:12px;padding:6px 0;min-height:36px}
+@media(max-width:700px){.importance-details{padding:6px 12px}}
+@media(max-width:700px){.importance-toggle{font-size:12px;min-height:44px;gap:6px}.importance-config{font-size:11px;padding:2px}.importance-status{font-size:12px;align-items:flex-start}.importance-status button{min-height:44px}.importance-toggle-wrap{gap:3px}}

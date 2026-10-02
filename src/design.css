@@ -1,0 +1,289 @@
+/* 即问的界面基础：正文优先，绿色用于品牌、操作和选中状态。 */
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 100%;
+  font-optical-sizing: auto;
+  color: #25332e;
+  background: #f5f6f5;
+  --panel-inset: 24px;
+  --green: #315e4b;
+  --green-hover: #244b3a;
+  --muted: #66736d;
+  --border: #e3e8e5;
+  --soft: #f3f6f4;
+  --paper: #fff;
+  --sidebar: #f0f3f1;
+  --ink: #25332e;
+  --secondary: #617068;
+  --accent-soft: #e2ece6;
+  --surface-raised: #ffffffed;
+  --shadow-raised: 0 12px 40px #1d34251a, 0 2px 8px #1d34250a;
+}
+
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button:not(.help-button) { transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
+button:not(.help-button):active:not(:disabled) { transform: none; filter: brightness(.94); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.icon { min-width: 36px; min-height: 36px; border-radius: 9px; color: var(--secondary); }
+.icon:hover { color: var(--green); background: var(--accent-soft); }
+.primary, .pause-button { min-height: 40px; border-radius: 10px; font-size: .875rem; font-weight: 550; }
+.pause-button { color: var(--green); background: var(--accent-soft); border-color: #c5d8cd; }
+.text-button { font-size: .875rem; }
+.muted { color: var(--secondary); font-size: .8125rem; }
+.brand { color: var(--green); letter-spacing: .02em; }
+.brand-mark { border-radius: 10px; background: var(--green); }
+
+/* 导航具有较厚的背景，阅读区保持安静、明亮。 */
+.sidebar { width: 248px; padding: 24px 16px 0; border-color: var(--border); }
+.sidebar-rail { width: 56px; }
+.sidebar-head .brand { font-size: 1.375rem; gap: 10px; }
+.new-class { margin: 28px 4px 28px; min-height: 42px; border-radius: 10px; font-size: .875rem; color: var(--green); border-color: #d7e0da; box-shadow: 0 1px 2px #1d342508; }
+.new-class:hover { background: var(--soft); }
+.sidebar-label { margin: 0 12px 12px; font-size: .75rem; color: var(--secondary); letter-spacing: .02em; }
+.sidebar-label span { font-size: .75rem; color: var(--secondary); }
+.class-row { border-radius: 10px; margin-bottom: 6px; }
+.class-row:has(.active), .class-item.active { background: var(--accent-soft); }
+.class-item { border-radius: 10px; padding: 13px 10px; color: var(--secondary); }
+.class-item:hover { background: #e8eeea; }
+.class-item strong { font-size: .875rem; color: var(--ink); font-weight: 500; }
+.class-item.active strong { color: var(--green-hover); font-weight: 600; }
+.class-item small { margin-top: 6px; font-size: .6875rem; color: var(--secondary); line-height: 1.5; }
+.class-actions { min-width: 28px; min-height: 36px; margin-right: 4px; }
+.sidebar-empty { color: var(--secondary); font-size: .8125rem; }
+.sidebar-bottom { padding: 16px 4px 20px; }
+.profile { border-color: #dae2dd; padding-top: 14px; }
+.profile strong { font-size: .8125rem; font-weight: 500; }
+.profile-entry:hover, .profile-entry[aria-expanded=true] { background: var(--accent-soft); }
+.avatar { background: #dce8e0; color: var(--green); }
+.guide-entry { color: var(--secondary); }
+.transcript-panel { background: #fcfdfc; }
+.chat-panel { background: var(--paper); }
+.panel-heading, .chat-panel .chat-heading { height: auto; min-height: 72px; padding: 10px var(--panel-inset); border-bottom: 1px solid var(--border); gap: 12px; }
+.panel-heading { background: #ffffffd9; }
+.panel-heading h2 { font-size: .9375rem; font-weight: 600; color: var(--ink); line-height: 1.4; letter-spacing: 0; }
+.panel-heading h2 svg { color: var(--secondary); }
+.chat-panel .chat-heading h2 { align-self: flex-start; margin-top: 4px; }
+.panel-title { flex: 1; min-width: 0; }
+.panel-title h2 { margin: 0; }
+.panel-subtitle { display: block; margin-top: 4px; font-size: .75rem; line-height: 1.4; color: var(--secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.new-question { min-height: 36px; padding: 7px 11px; font-size: .8125rem; border-radius: 9px; color: var(--green); background: var(--soft); border-color: var(--border); }
+.new-question:hover { background: var(--accent-soft); }
+.question-list-trigger span { color: var(--green); }
+.importance-toggle { color: var(--secondary); font-size: .8125rem; }
+.importance-toggle i { transition: background-color 140ms ease; }
+.importance-toggle i:after { left: 2px; transition: transform 140ms ease; }
+.importance-toggle input:checked+i:after { left: 2px; transform: translateX(12px); }
+.importance-details { border-color: var(--border); }
+.importance-status { color: var(--secondary); }
+
+/* 正文采用系统字体，辅助信息保持可读，长段落有清楚的阅读节奏。 */
+.transcript-scroll { padding: 16px var(--panel-inset) 24px; scrollbar-color: #ced8d1 transparent; }
+.transcript-line { grid-template-columns: 44px minmax(0,1fr); gap: 16px; padding: 12px 0; }
+.transcript-line p { font-size: .9375rem; line-height: 1.85; color: var(--ink); letter-spacing: 0; overflow-wrap: anywhere; }
+.transcript-line:hover { background: #f4f7f4; }
+.timestamp { color: var(--secondary); font-size: .6875rem; min-height: 28px; padding-top: 5px; }
+.partial-indicator { color: var(--secondary); font-size: .6875rem; }
+.messages { padding: 16px var(--panel-inset) 24px; scrollbar-color: #ced8d1 transparent; }
+.message { margin-bottom: 24px; }
+.message-label { font-size: .75rem; color: var(--secondary); margin-bottom: 10px; }
+.message.user .message-label { color: var(--secondary); }
+.message-body { color: var(--ink); font-size: .9375rem; line-height: 1.85; }
+.message-body strong { color: var(--ink); font-weight: 600; }
+.message.user .message-body { padding: 14px 18px; border-radius: 14px; background: var(--soft); color: var(--ink); }
+.message-body pre { background: var(--soft); font-size: .8125rem; border-radius: 10px; }
+.message-body img { max-width: 100%; height: auto; }
+.message-body h1, .message-body h2, .message-body h3, .message-body h4 { line-height: 1.4; letter-spacing: -.015em; }
+.message-body h1 { font-size: 1.5rem; }
+.message-body h2 { font-size: 1.3125rem; }
+.message-body h3, .message-body h4 { font-size: 1.125rem; }
+.failed-label { font-size: .75rem; color: #946238; }
+.message-actions .icon { color: var(--secondary); }
+/* 两侧共用空状态排版，正文出现后恢复各自的阅读布局。 */
+.transcript-scroll:has(> .workspace-empty) { padding: 0; display: flex; }
+.workspace-empty.panel-empty, .workspace-empty.chat-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  flex: 1; min-width: 0; min-height: 0; height: auto; padding: 24px;
+  text-align: center; overflow: auto;
+}
+.workspace-empty::before { content: ''; flex: 0.42 0 0; }
+.workspace-empty::after { content: ''; flex: 0.58 0 0; }
+.workspace-empty-content { flex: none; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
+.workspace-empty-symbol {
+  display: grid; place-items: center; flex: none; width: 72px; height: 72px;
+  margin-bottom: 22px; border-radius: 50%; background: #edf3ef; color: #527660;
+}
+.workspace-empty-symbol svg { display: block; }
+.workspace-empty .workspace-empty-content h3 {
+  display: block; margin: 0 0 8px; color: var(--ink); font-size: 20px;
+  font-weight: 550; line-height: 1.5; letter-spacing: .04em; text-wrap: pretty;
+}
+.workspace-empty .workspace-empty-content p {
+  max-width: none; margin: 0; color: var(--secondary); font-size: 14px;
+  line-height: 1.7; text-wrap: pretty; overflow-wrap: anywhere;
+}
+.workspace-empty-content .text-button { margin-top: 12px; }
+@media(min-width:701px) {
+  .classroom-workspace { container-type: size; }
+  .workspace-empty::before { flex: none; height: max(0px, calc(42cqh - 174px)); }
+}
+.composer-area { padding: 12px var(--panel-inset) 20px; }
+.composer { padding: 14px; border: 1px solid #d6e0d9; border-radius: 16px; box-shadow: 0 2px 6px #1d342506; }
+.composer:focus-within { border-color: #89ab98; box-shadow: 0 0 0 3px #315e4b0d; }
+.composer textarea { height: 48px; font-size: .9375rem; line-height: 1.65; color: var(--ink); }
+.composer textarea::placeholder { color: var(--secondary); }
+.send { width: 36px; height: 36px; border-radius: 10px; background: var(--green); }
+.send:hover { background: var(--green-hover); }
+.send:disabled { background: #d0dbd3; color: #53685a; opacity: 1; }
+.quote-list .selected-context { background: var(--soft); border-color: var(--border); border-left: 3px solid #8da997; border-radius: 8px; }
+.quote-list .selected-context p { color: var(--ink); font-size: .8125rem; }
+.quote-list .selected-context>span { color: var(--secondary); font-size: .75rem; }
+
+/* 录音是主要操作，回放与时间信息留在同一条控制栏内。 */
+.audio-player { margin: 0 var(--panel-inset); padding: 14px 0; gap: 12px; border-color: var(--border); }
+.audio-player .primary, .audio-player .pause-button { min-height: 40px; padding: 9px 12px; font-size: .8125rem; white-space: nowrap; }
+.audio-player .record-time { color: var(--secondary); font-size: .75rem; }
+.record-time.live .record-dot { background: var(--green); }
+.play-button { width: 36px; height: 36px; flex-shrink: 0; background: var(--soft); border-color: var(--border); color: var(--green); }
+.audio-progress { min-width: 64px; }
+.audio-progress>div { color: var(--secondary); font-size: .6875rem; }
+.audio-progress input { accent-color: var(--green); height: 12px; }
+.speed { min-height: 36px; font-size: .75rem; color: var(--secondary); }
+.save-status { color: var(--secondary); font-size: .6875rem; background: var(--soft); border-color: var(--border); padding: 0 24px; }
+/* 桌面两侧操作栏共用高度与底部留白，状态提示不挤动底边。 */
+@media(min-width:701px) {
+  .classroom-workspace { --control-height: 78px; --control-bottom: 20px; }
+  .transcript-panel > .audio-player {
+    order: 2; height: var(--control-height); min-height: var(--control-height);
+    margin: 0 var(--panel-inset) var(--control-bottom); padding: 14px;
+    border: 1px solid #d6e0d9; border-radius: 16px; background: #fff;
+  }
+  .transcript-panel > .save-status {
+    order: 1; margin: 0 var(--panel-inset) 8px; padding: 0;
+    background: transparent; border: 0;
+  }
+  .chat-panel > .composer-area { padding: 0 var(--panel-inset) var(--control-bottom); }
+  .chat-panel .composer { height: var(--control-height); box-shadow: none; }
+}
+.pending-upload { background: var(--soft); color: var(--green); border-color: var(--border); }
+.panel-resizer { background: linear-gradient(to right, transparent 3px, var(--border) 3px, var(--border) 4px, transparent 4px); }
+.panel-resizer:after { background: #acbdb1; border-radius: 2px; }
+.panel-resizer:hover, .panel-resizer:active, .panel-resizer:focus-visible { background: #d9e6dd; outline-color: var(--green); }
+
+/* 浮层用材质与阴影表达前后关系，文本始终有稳定的承托背景。 */
+.modal-overlay { background: #172a2247; backdrop-filter: blur(4px); }
+.anchored-overlay, .account-overlay.modal-overlay { background: transparent; backdrop-filter: none; }
+.modal, .account-panel.modal, .settings-modal { border-color: var(--border); border-radius: 18px; box-shadow: var(--shadow-raised); }
+.modal-heading { border-color: var(--border); background: #f8faf8; }
+.modal-heading h2 { font-size: 1.125rem; font-weight: 600; color: var(--ink); }
+.modal-intro, .snapshot-list p { color: var(--secondary); font-size: .875rem; }
+.snapshot-list span { color: var(--secondary); font-size: .75rem; }
+.form-input { border-color: #d6e0d9; border-radius: 10px; color: var(--ink); font-size: .875rem; }
+.question-list-popup, .toast, .back-live { background: var(--surface-raised); backdrop-filter: blur(20px) saturate(130%); border-color: #dce5df; box-shadow: var(--shadow-raised); color: var(--ink); }
+.question-list-popup { border-radius: 14px; padding: 8px; }
+.question-list-popup button { color: var(--ink); font-size: .8125rem; border-radius: 8px; }
+.question-list-popup button:hover, .question-list-popup button:focus-visible { background: var(--soft); }
+.question-list-popup button.chosen { color: var(--green); background: var(--accent-soft); }
+.question-list-popup button small { color: var(--secondary); font-size: .6875rem; }
+.toast { font-size: .875rem; border-radius: 14px; }
+.back-live { min-height: 36px; font-size: .75rem; }
+.teacher-question-card { background: var(--soft); border-color: var(--border); border-radius: 12px; box-shadow: none; }
+.teacher-question-card p { font-size: .875rem; color: var(--ink); }
+.settings-section+.settings-section, .settings-service+.settings-service, .settings-account-row { border-color: var(--border); }
+.settings-device-select, .settings-action { background: var(--soft); border-color: var(--border); border-radius: 10px; }
+.settings-service-main strong, .settings-row-label, .settings-device-label { color: var(--ink); }
+.settings-section-heading h3, .settings-help, .settings-row-label>svg { color: var(--secondary); }
+
+/* 登录页沿用同一文字与控件体系。 */
+.auth-page { background: #f5f7f5; gap: 10%; }
+.auth-intro h1 { font-size: clamp(2rem,4vw,3.5rem); font-weight: 600; line-height: 1.35; letter-spacing: -.035em; color: var(--ink); }
+.auth-intro .eyebrow, .auth-intro>p:last-child { font-size: .875rem; color: var(--secondary); letter-spacing: .02em; }
+.auth-lines { height: 80px; }
+.auth-form { max-width: 360px; }
+.auth-form h2 { color: var(--ink); font-size: 1.625rem; font-weight: 600; letter-spacing: -.02em; }
+.auth-form>p { color: var(--secondary); font-size: .875rem; }
+.auth-form label { color: var(--ink); font-size: .875rem; font-weight: 500; }
+.auth-form input { height: 48px; border-color: #d6e0d9; border-radius: 10px; background: #fff; font-size: 1rem; }
+.auth-form input::placeholder { color: var(--secondary); }
+.auth-form form>.primary { font-size: .9375rem; min-height: 48px; }
+.auth-switch { min-height: 44px; color: var(--green); font-size: .8125rem; }
+.auth-form .local-note, .auth-footer { color: var(--secondary); font-size: .75rem; }
+.auth-form .form-error { font-size: .8125rem; }
+.code-send { height: 48px; font-size: .8125rem; border-radius: 10px; }
+
+@media (min-width: 701px) and (max-width: 1150px) {
+  :root { --panel-inset: 16px; }
+  .sidebar { width: 224px; padding-left: 12px; padding-right: 12px; }
+  .panel-heading, .chat-panel .chat-heading { padding-left: 16px; padding-right: 16px; }
+  .transcript-scroll { padding-left: 16px; padding-right: 16px; }
+  .transcript-line { gap: 10px; }
+  .messages { padding: 16px var(--panel-inset) 20px; }
+  .audio-player { margin: 0 16px; gap: 8px; }
+  .audio-player .record-time { display: none; }
+  .composer-area { padding: 12px 16px 16px; }
+}
+@media (max-width: 900px) {
+  .sidebar { width: min(300px,calc(100vw - 32px)); padding-top: max(20px,env(safe-area-inset-top)); }
+}
+@media (max-width: 700px) {
+  :root { --panel-inset: 12px; }
+  .panel-heading, .chat-panel .chat-heading { height: auto; min-height: 56px; padding: 4px 12px; gap: 8px; }
+  .panel-heading h2 { font-size: .875rem; }
+  .chat-panel .chat-heading h2 { align-self: center; margin-top: 0; }
+  .panel-subtitle { font-size: .6875rem; margin-top: 2px; }
+  .icon, .new-question, .primary, .pause-button, .send { min-height: 44px; }
+  .icon, .send { min-width: 44px; }
+  .importance-toggle { font-size: .75rem; }
+  .new-question { font-size: .8125rem; padding: 7px 10px; }
+  .transcript-scroll { padding: 8px 16px 12px; }
+  .transcript-line { grid-template-columns: 42px minmax(0,1fr); gap: 8px; padding: 8px 0; }
+  .transcript-line p, .message-body { font-size: 1rem; line-height: 1.8; }
+  .timestamp { min-height: 44px; font-size: .6875rem; }
+  .messages { padding: 12px 16px; }
+  .message.user .message-body { padding: 10px 14px; }
+  .audio-player { margin: 0 12px; padding: 6px 0; gap: 6px; }
+  .audio-player .primary, .audio-player .pause-button { min-height: 44px; padding: 8px; font-size: .75rem; }
+  .audio-progress { min-width: 0; }
+  .audio-progress input { height: 16px; }
+  .play-button, .speed { min-width: 44px; min-height: 44px; }
+  .save-status { padding: 4px 12px; font-size: .6875rem; }
+  .composer-area { padding: 8px 12px max(12px,env(safe-area-inset-bottom)); }
+  .composer { padding: 8px 10px; border-radius: 14px; }
+  .composer textarea { height: 40px; padding: 8px 0; font-size: 1rem; line-height: 1.5; }
+  .send { width: 44px; height: 44px; border-radius: 11px; }
+  .workspace-empty.panel-empty, .workspace-empty.chat-empty { padding: 16px; }
+  .workspace-empty-symbol { width: 48px; height: 48px; margin-bottom: 12px; }
+  .workspace-empty-symbol svg { width: 25px; height: 25px; }
+  .workspace-empty .workspace-empty-content h3 { font-size: 16px; margin-bottom: 6px; }
+  .workspace-empty .workspace-empty-content p { font-size: 13px; }
+
+  .quote-list .selected-context p { font-size: .875rem; }
+  .form-input { font-size: 1rem; }
+  .settings-modal { border-radius: 0; }
+  .auth-form { max-width: 360px; }
+  .auth-form h2 { font-size: 1.5rem; }
+  .auth-form>p { font-size: .875rem; }
+  .auth-footer { font-size: .6875rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel-heading, .question-list-popup, .toast, .back-live { background: #fff; backdrop-filter: none; }
+  .modal-overlay { backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --ink: #14231b; --secondary: #39483f; --border: #8a9c8e; --surface-raised: #fff; }
+  .panel-heading, .question-list-popup, .toast, .back-live { background: #fff; backdrop-filter: none; }
+  .composer, .form-input, .auth-form input, .new-question, .modal, .class-item.active { border-color: #718777; }
+  .class-item.active { outline: 1px solid #718777; outline-offset: -1px; }
+  .panel-subtitle, .timestamp, .message-label { color: var(--secondary); }
+}
+
+/* 键盘弹出或横屏时优先留出操作空间。 */
+@media(max-width:700px) and (max-height:600px) {
+  .workspace-empty-symbol { display: none; }
+  .workspace-empty.panel-empty, .workspace-empty.chat-empty { padding: 12px; }
+}

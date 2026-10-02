@@ -1,0 +1,106 @@
+.settings-modal{width:540px;max-height:min(760px,calc(100dvh - 32px));border-color:#dce5d6;box-shadow:0 18px 48px #1d342527}
+.settings-modal .modal-heading h2{font-size:20px;font-weight:600;color:#25392d}
+.api-section form{margin-top:18px}
+.api-section fieldset{margin:0;padding:0;border:0;min-width:0}
+.api-service-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.api-service-heading h3{display:flex;align-items:center;gap:10px;margin:0;font-size:16px;color:#304435}
+.api-config-status{font-size:12px;color:#4e624e}
+.api-field{display:block;margin:16px 0;font-size:13px;color:#304435;font-weight:500}
+.api-field .form-input{display:block;width:100%;margin-top:8px;min-height:44px;font-size:14px;font-weight:400}
+.api-field .form-input::placeholder{color:#62725e}
+.api-checkbox{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.6;color:#4e624e}
+.api-checkbox input{margin-top:4px;flex-shrink:0}
+.api-advanced{margin:18px 0;font-size:13px;color:#315d41}
+.api-advanced summary{cursor:pointer;min-height:36px;display:list-item}
+.api-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.api-actions>button{min-height:44px;font-size:13px}
+.api-clear{margin-left:auto;color:#963e32}
+.api-setup-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;border-bottom:1px solid #dce5d6;color:#304435;font-size:13px;flex-wrap:wrap}
+@media(max-width:700px){.api-field .form-input{font-size:16px}.api-setup-prompt{padding:10px 16px}}
+.settings-section+.settings-section{border-top:1px solid #e5ebe1}
+.settings-section-heading h3{margin:0;font-weight:600}
+.settings-service-main{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.settings-service-main strong{display:block;color:#304435;font-size:14px}
+.settings-action{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex-shrink:0;border:1px solid #dce5d6;border-radius:7px;color:#315d41;cursor:pointer}
+.settings-action:hover{background:#f0f5eb}
+.settings-action:disabled{opacity:.55;cursor:default}
+.settings-service+.settings-service{border-top:1px solid #edf1e9}
+.settings-help{margin:12px 0 0;color:#62725e;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+/* 设置采用单列分区，账号面板就近显示在侧栏账号旁。 */
+.settings-modal{border-radius:16px}
+.settings-modal .modal-heading{padding:22px 28px 18px}
+.settings-modal .modal-body{padding:0 28px 28px}
+.settings-page:focus{outline:none}
+.settings-section{padding-top:24px}
+.settings-section+.settings-section{margin-top:24px}
+.settings-section-heading{margin-bottom:16px}
+.settings-section-heading h3{font-size:13px;color:#62725e;letter-spacing:.03em}
+.settings-device-label{display:block;font-size:14px;font-weight:500;color:#304435;margin-bottom:10px}
+.settings-device-controls{display:flex;align-items:center;gap:12px}
+.settings-device-select{flex:1;min-width:0;width:100%;margin:0;height:44px;border-radius:8px;background:#f8faf6;font-size:14px}
+.settings-refresh{display:inline-flex;gap:6px;flex-shrink:0;min-height:44px;padding:0 2px;border:0;background:transparent;color:#315d41;font-size:12px}
+.settings-refresh:hover{color:#244b3a}
+.settings-service{padding:13px 0}
+.settings-row-label{display:flex;align-items:center;gap:12px;min-width:0;color:#304435;font-size:14px}
+.settings-row-label>svg{color:#6a7e6a;flex-shrink:0}
+.settings-service-main strong{font-weight:500}
+.settings-action{min-width:62px;min-height:36px;padding:7px 12px;font-size:12px;background:#f8faf6;border-color:#dce5d6}
+.settings-test-result{display:flex;align-items:flex-start;gap:6px;margin:10px 0 0;color:#315d41;font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.settings-test-result>svg{flex-shrink:0;margin-top:3px}
+.settings-test-result.is-error,.settings-inline-error{color:#963e32}
+.settings-inline-error{margin:10px 0 0;font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.settings-back{min-height:44px;margin:12px 0 8px;padding:0;border:0;background:transparent;color:#315d41;font-size:13px;gap:7px}
+.settings-account-identity{display:flex;align-items:center;gap:14px;padding:16px 0 26px}
+.settings-account-identity .avatar{width:44px;height:44px;flex-shrink:0;font-size:17px}
+.settings-account-identity>div{min-width:0}
+.settings-account-identity small{display:block;color:#62725e;font-size:12px;margin-bottom:6px}
+.settings-account-identity strong{font-size:16px;font-weight:550;color:#304435;overflow-wrap:anywhere}
+.settings-account-row{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:64px;padding:14px 0;gap:16px;border:0;border-top:1px solid #e5ebe1;border-bottom:1px solid #e5ebe1;background:transparent;text-align:left;color:#304435}
+.settings-account-row:hover{background:#f8faf6}
+.settings-account-row>span:last-child{display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:13px;color:#315d41}
+.settings-usage{position:relative;padding:24px 0;color:#304435;font-size:14px}
+.settings-usage>strong{display:block;margin-top:12px;font-size:20px;font-weight:550;font-variant-numeric:tabular-nums}
+.settings-usage strong small{font-size:13px;font-weight:400;color:#62725e}
+.settings-usage p{margin:8px 0 0;font-size:12px;color:#62725e}
+.settings-logout{border-top:1px solid #e5ebe1;margin-top:8px;padding-top:20px}
+.settings-logout>button{width:100%;min-height:44px;border:1px solid #e5d8d2;border-radius:8px;color:#963e32;background:#fff;font-size:14px;gap:9px}
+.settings-logout>button:hover:not(:disabled){background:#fcf3f0;border-color:#d8b9ae}
+.settings-password{padding-top:8px}
+.settings-password>label{display:block;margin:0 0 20px;font-size:14px;font-weight:500;color:#304435}
+.settings-password .form-input{display:block;margin-top:9px;min-height:44px;font-weight:400;font-size:14px;border-radius:8px}
+.settings-password .form-input::placeholder{color:#62725e}
+.settings-password-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:26px}
+.settings-password-actions>button{min-height:44px;padding:10px 16px;font-size:13px}
+.profile-entry{flex:1;min-width:0;display:flex;justify-content:flex-start;gap:9px;padding:6px 4px;margin:-6px -4px;border:0;border-radius:8px;background:transparent;color:#304435;text-align:left;min-height:44px}
+.profile-entry:hover,.profile-entry[aria-expanded=true]{background:#e3eadc}
+.profile-entry .avatar{flex-shrink:0}
+.profile-entry strong{flex:1;min-width:0}
+.profile-entry>svg{flex-shrink:0;color:#6a7e6a}
+.sidebar-rail-bottom{display:flex;flex-direction:column;gap:12px;margin-top:auto;padding-bottom:20px}
+.account-overlay.modal-overlay{background:transparent;backdrop-filter:none;padding:0}
+.account-panel.modal{border:1px solid #dce5d6;border-radius:14px;box-shadow:0 10px 36px #1d342526;padding:0;max-width:calc(100vw - 24px)}
+.account-panel .modal-heading{padding:14px 20px;background:#f8faf6}
+.account-panel .modal-heading h2{font-size:17px;color:#25392d;font-weight:600}
+.account-panel .modal-body{padding:0 20px 20px}
+.account-panel .settings-account-identity{padding:20px 0}
+.account-panel .settings-account-identity .avatar{width:36px;height:36px;font-size:14px}
+.account-panel .settings-account-identity strong{font-size:14px}
+.account-panel .settings-account-row{min-height:56px}
+.account-panel .settings-usage{padding:20px 0}
+.account-panel .settings-logout{margin-top:0;padding-top:16px}
+@media(max-width:700px){
+  .modal-overlay:has(>.settings-modal){padding:0}
+  .settings-modal{width:100%;max-width:none;height:var(--workspace-height,100dvh);max-height:100dvh;border:0;border-radius:0}
+  .settings-modal .modal-heading{padding:16px 20px}
+  .settings-modal .modal-heading .icon{min-width:44px;min-height:44px}
+  .settings-modal .modal-body{padding:0 20px max(24px,env(safe-area-inset-bottom))}
+  .settings-modal .settings-action{min-height:44px;font-size:13px}
+  .settings-device-controls{gap:10px}
+  .settings-device-select{font-size:16px}
+  .settings-refresh{font-size:13px}
+  .settings-password .form-input{font-size:16px}
+  .settings-account-row{gap:10px}
+  .account-panel .modal-heading .icon{min-width:44px;min-height:44px}
+  .account-panel .settings-password .form-input{font-size:16px}
+  .account-panel .settings-action{min-height:44px}
+}
