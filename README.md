@@ -4,6 +4,12 @@
 
 支持中文和英文界面、邮箱注册登录、课堂管理、录音回放、Markdown 与数学公式。个人电脑可直接运行，服务器可通过 Docker Compose 部署。
 
+## 在线体验
+
+[打开即问体验网站](https://jiwen.yaojiaxu.com)
+
+无需本地安装，打开网站后使用邮箱和密码注册，即可开始体验。
+
 ## 视频展示
 
 [![即问演示：课堂录音、实时转写与 AI 问答](docs/media/jiwen-demo.gif)](docs/media/jiwen-demo.mp4)
