@@ -22,14 +22,14 @@ export function legalDocument(env,mailReady=false,jevEnabled=false){
   if(env.ASR_PROVIDER!=='local'&&env.LOCAL_ASR_RECOVERY==='true')providers.push({service:'asr',name:'运营者本地补转写',entity:operator,region:process.env.PUBLIC_STORAGE_REGION||'中国大陆，运营者部署设备',data:'已保存的录音音频，用于后台补齐缺失文字；“本地”指运营者设备，并非用户手机或电脑'});
   providers.push(apiProvider('llm',env.LLM_BASE_URL,'提问、对应课堂转写片段、冻结引用和对话历史；不发送完整录音文件'));
   if(env.LLM_ROUTING==='openrouter-first'&&env.OPENROUTER_API_KEY)providers.push({service:'llm',name:'OpenRouter 与其模型处理方',entity:'OpenRouter, Inc.；模型处理方依实际路由',region:'可能涉及境外处理，需运营者在启用前核实',data:'提问、课堂转写片段和对话历史',privacyUrl:'https://openrouter.ai/privacy'});
-  if(mailReady)providers.push({service:'mail',name:host(`smtp://${process.env.SMTP_HOST||'smtp.qq.com'}`)==='smtp.qq.com'?'腾讯 QQ 邮箱':'运营者配置的邮件服务',entity:(process.env.SMTP_HOST||'smtp.qq.com')==='smtp.qq.com'?'腾讯（QQ 邮箱服务）':process.env.MAIL_PUBLIC_ENTITY||'待运营者补充',region:(process.env.SMTP_HOST||'smtp.qq.com')==='smtp.qq.com'?'中国大陆；收件方邮箱按其规则处理':process.env.MAIL_PUBLIC_REGION||'待运营者核实',data:'收件邮箱、密码重置验证码与邮件内容；不发送课堂录音',privacyUrl:TENCENT_PRIVACY});
+  if(mailReady)providers.push({service:'mail',name:host(`smtp://${process.env.SMTP_HOST||'smtp.qq.com'}`)==='smtp.qq.com'?'腾讯 QQ 邮箱':'运营者配置的邮件服务',entity:(process.env.SMTP_HOST||'smtp.qq.com')==='smtp.qq.com'?'腾讯（QQ 邮箱服务）':process.env.MAIL_PUBLIC_ENTITY||'待运营者补充',region:(process.env.SMTP_HOST||'smtp.qq.com')==='smtp.qq.com'?'中国大陆；收件方邮箱按其规则处理':process.env.MAIL_PUBLIC_REGION||'待运营者核实',data:'收件邮箱、注册和密码重置验证码与邮件内容；不发送课堂录音',privacyUrl:TENCENT_PRIVACY});
   if(jevEnabled)providers.push({service:'jev',name:'Jev 服务',entity:process.env.JEV_PUBLIC_ENTITY||'待运营者补充',region:process.env.JEV_PUBLIC_REGION||'待运营者核实',data:'用于重点和问题检测的转写片段'});
   const limits=storageLimits;
   const version=`2026-10-07-${createHash('sha256').update(JSON.stringify({operator,contact,providers,limits,textRevision:legalDocument.toString()})).digest('hex').slice(0,12)}`;
   const section=(title,...paragraphs)=>({title,paragraphs});
   return {version,operator,contact,providers,limits,
     privacy:{title:'即问数据说明',sections:[
-      section('运营者与用途',`本服务由${operator}运营。隐私、反馈和数据请求请联系 ${contact}。`,`邮箱用于登录和重置密码；密码以加盐散列保存。课堂录音、转写、问题、回答和冻结引用用于你主动使用的课堂记录与问答功能；使用记录用于额度控制。不将课堂内容主动用于广告或训练。`),
+      section('运营者与用途',`本服务由${operator}运营。隐私、反馈和数据请求请联系 ${contact}。`,`邮箱用于注册验证、登录和重置密码；密码以加盐散列保存。课堂录音、转写、问题、回答和冻结引用用于你主动使用的课堂记录与问答功能；使用记录用于额度控制。不将课堂内容主动用于广告或训练。`),
       section('录音和外部处理','开始课堂录音前，你需要确认已取得教师、相关参与者和机构要求的必要许可。麦克风授权不等于其他人的录音许可。请避免录入与课堂无关的个人信息和敏感信息。','音频上传到运营者的部署设备。实际转写、问答和邮件处理方列在本页供应商信息中。供应商依据自己的政策处理和保存请求，不能将本服务的删除操作解释为供应商立即删除全部副本。处理方或地区变更会更新本政策中的供应商信息。'),
       section('保存期与存储',`每个账号的服务器存储上限为${Math.round(limits.userBytes/1024**2)} MiB。整堂课堂在最后一次成功上传新的音频分段后保留${limits.retentionDays}天，到期删除录音、转写与相关对话；浏览和提问不延长保存期。旧课堂从本规则首次生效时获得完整保存期。到期前7天和1天在课堂页面提醒，请及时导出。`,`录音前按剩余容量限制本次时长，单段最多${Math.round(limits.maxRecordingSeconds/3600)}小时；空间不足时不能开始新录音。原始分段与兼容音频副本都计入容量。浏览器保留尚未上传的音频；退出登录不会自动清除，删除课堂或注销会请求清除对应缓存。浏览器存储失败时必须保持页面开启，尝试恢复或导出。`,'过期登录会话和失效验证码在失效后定期清理；用量明细保留90天。备份工具保留最近7天副本，需运营者停服务后执行；尚未承诺已启用每日自动备份。删除清单会在恢复备份时再次排除已删除数据。'),
       section('查阅、导出和删除',`账号面板可导出账号、课堂文字和问答数据；已保存的录音可单独下载。可删除课堂，或用密码确认注销账号。正在录音、保存、回放或回答时，请结束任务后删除。实例管理员需完成交接后再处理注销。`,`你可以联系 ${contact} 请求更正、副本、删除、撤回授权或投诉。我们以3个工作日内确认收到、15个工作日内完成或说明处理进度为受理目标。撤回不影响撤回前已完成的处理；停止上传并删除课堂可停止后续使用。`)
