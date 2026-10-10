@@ -4,6 +4,12 @@
 
 支持中文和英文界面、邮箱注册登录、课堂管理、录音回放、Markdown 与数学公式。个人电脑可直接运行，服务器可通过 Docker Compose 部署。
 
+## 视频展示
+
+[![即问演示：课堂录音、实时转写与 AI 问答](docs/media/jiwen-demo.gif)](docs/media/jiwen-demo.mp4)
+
+[查看原视频（含声音，约 23 秒）](docs/media/jiwen-demo.mp4) · [配乐署名](docs/media/README.md)
+
 ## 快速开始
 
 需要 **Node.js 24 或更新版本**及其自带的 npm，支持 Windows、macOS、Linux。
