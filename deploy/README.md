@@ -5,12 +5,12 @@
 ## 上线
 
 1. 将域名的 DNS 指向服务器，开放服务器的 TCP 80、443 端口。
-2. 把项目代码放到服务器；不要把本机 `data/`、`.env`、`node_modules/` 或录音上传到公开仓库或构建上下文。
-3. 在服务器项目根目录把 `.env.example` 复制为 `.env`，增加 `SITE_DOMAIN=你的域名`（只填主机名，不带协议或路径）。Linux 上执行 `chmod 600 .env`。
+2. 在服务器执行 `git clone https://github.com/MrRoam/jiwen.git`，再执行 `cd jiwen`。不要把本机 `data/`、`.env`、`node_modules/` 或录音上传到公开仓库或构建上下文。
+3. 在服务器项目根目录执行 `cp .env.example .env`（仅首次部署，已有配置不要覆盖），填写 `SITE_DOMAIN=你的域名`（只填主机名，不带协议或路径）、自己的 `ADMIN_EMAIL`、注册用的 `SMTP_*` 以及自己的运营者、联系邮箱、存储地域和入口信息 `PUBLIC_*`，再执行 `chmod 600 .env`。邮件步骤见[注册邮件配置](../docs/自行部署与AI协助.md#配置注册邮件)。默认自部署按月限制转写，可通过 `MONTHLY_AUDIO_SECONDS` 调整；只有主动设置 `ASR_QUOTA_MODE=trial` 才执行每账号一次性 1 小时。
 4. 在项目根目录执行 `docker compose up -d --build`，用 `docker compose ps` 和 `docker compose logs --tail=80` 检查启动结果。
-5. 打开 `https://你的域名`，在受控访问环境注册自己的管理员账号，再从侧栏「API 配置」填写密钥并测试转写和问答，再用实际手机录音、暂停及回放，确认后分享链接。
+5. 打开 `https://你的域名`，在受控访问环境注册自己的管理员账号，再点击侧栏底部账号，从「API 配置」填写密钥并测试转写和问答，再用实际手机录音、暂停及回放，确认后分享链接。
 
-部署使用远程语音转写，可在页面配置有效的百炼 Key；不包含本机 Python 转写服务。Compose 固定安全 Cookie、容器监听地址和数据目录；页面保存的 API 配置在持久卷中，立即生效；额度和可选功能读取服务器 `.env`。默认最多 100 个账号，无需邀请码，拿到链接的人在名额内均可注册。`ADMIN_EMAIL` 仅用于选择管理员账号，邮箱注册不验证所有权，公开分享前先完成管理员注册。
+部署使用远程语音转写，可在页面配置有效的百炼 Key；不包含本机 Python 转写服务。Compose 固定安全 Cookie、容器监听地址和数据目录；页面保存的 API 配置在持久卷中，立即生效；额度和可选功能读取服务器 `.env`。注册不限人数，无需邀请码，拿到链接的人均可注册。旧 `MAX_USERS` 配置不再生效。`ADMIN_EMAIL` 仅用于选择管理员账号，注册需配置 SMTP 并通过邮件验证码验证邮箱所有权，公开分享前先完成管理员注册。
 
 Caddy 会为指向服务器的域名自动申请证书，要求域名解析正确且端口可达，参见 [官方说明](https://caddyserver.com/docs/quick-starts/reverse-proxy)。
 
@@ -26,7 +26,7 @@ Caddy 会为指向服务器的域名自动申请证书，要求域名解析正�
 mkdir -p backups
 chmod 700 backups
 docker compose stop app
-docker compose run --rm --no-deps -T --user root app tar -C /app/data -czf - . > "backups/classroom-$(date +%Y%m%d-%H%M%S).tgz"
+docker compose run --rm --no-deps -T --user root app tar -C /app/data -czf - . > "backups/jiwen-$(date +%Y%m%d-%H%M%S).tgz"
 docker compose start app
 ```
 

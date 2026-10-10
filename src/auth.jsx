@@ -5,15 +5,17 @@ import {t, translateMessage} from './i18n.js';
 import {LanguageSelect, useLocale} from './locale.jsx';
 import './auth.css';
 import {LandingDemo} from './landing-demo.jsx';
+import {LandingWordmark} from './landing-wordmark.jsx';
+import {LegalPage} from './legal.jsx';
+import {DeploymentGuide} from './deployment.jsx';
 
 function readAuthPage() {
   const page = window.location.hash.slice(1);
-  return ['login', 'register', 'reset'].includes(page) ? page : 'home';
+  return ['login', 'register', 'reset', 'privacy', 'terms'].includes(page) ? page : 'home';
 }
 
 export function Auth({config, onAuth, notice, setNotice, brand}) {
   const locale = useLocale();
-  const [wordmarkLoaded, setWordmarkLoaded] = useState(false);
   const [mode, setMode] = useState(readAuthPage);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,8 +28,11 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
   const [noticeKind, setNoticeKind] = useState('error');
   const heading = useRef(null);
   const previousMode = useRef(mode);
+  const legalReturn = useRef('home');
   const forgot = mode === 'reset';
   const registering = mode === 'register';
+  const needsCode = forgot || registering;
+  const legalPage = ['privacy', 'terms'].includes(mode);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -41,6 +46,7 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
 
   function switchMode(next) {
     if (next === mode) return;
+    if (['privacy', 'terms'].includes(next) && !legalPage) legalReturn.current = mode;
     window.history.pushState(null, '', next === 'home' ? window.location.pathname + window.location.search : '#' + next);
     setMode(next);
     setNotice('');
@@ -48,15 +54,19 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
     setPassword('');
     setConfirm('');
     setCode('');
+    setCooldown(0);
     setShowPassword(false);
   }
   useEffect(() => {
     const sync = () => {
-      setMode(readAuthPage());
+      const next = readAuthPage();
+      if (['privacy', 'terms'].includes(next) && !['privacy', 'terms'].includes(previousMode.current)) legalReturn.current = previousMode.current;
+      setMode(next);
       setNotice('');
       setPassword('');
       setConfirm('');
       setCode('');
+      setCooldown(0);
       setShowPassword(false);
     };
     window.addEventListener('hashchange', sync);
@@ -73,7 +83,7 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
     if (!emailInput.reportValidity()) return;
     setSending(true);
     try {
-      const result = await api('/auth/request-reset', {method: 'POST', body: {email}});
+      const result = await api(registering ? '/auth/request-registration' : '/auth/request-reset', {method: 'POST', body: {email, locale}});
       setNoticeKind('success');
       setNotice(result.message);
       setCooldown(60);
@@ -96,7 +106,7 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
         setNoticeKind('success');
         setNotice('密码已重置，请使用新密码登录。');
       } else {
-        const user = await api(`/auth/${mode}`, {method: 'POST', body: {email, password}});
+        const user = await api(`/auth/${mode}`, {method: 'POST', body: {email, password, ...(registering ? {code} : {})}});
         await onAuth(user);
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
@@ -114,30 +124,33 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
     </header>
     {home ? <main className="landing-main">
       <section className="landing-hero">
-        {locale === 'zh-CN' ? <h1 ref={heading} tabIndex={-1} className={`landing-wordmark${wordmarkLoaded ? ' is-wordmark-loaded' : ''}`}>
-          <span className={wordmarkLoaded ? 'landing-wordmark-text is-visually-hidden' : 'landing-wordmark-text'}>{t('听课有疑问，即时问')}</span>
-          <img className={wordmarkLoaded ? 'landing-wordmark-image' : 'landing-wordmark-image is-loading'} src="/brand/jiwen-slogan-v1.png" width={1920} height={819} alt="" aria-hidden="true" fetchPriority="high" onLoad={() => setWordmarkLoaded(true)} onError={() => setWordmarkLoaded(false)}/>
-        </h1> : <h1 ref={heading} tabIndex={-1}>{t('听课有疑问，即时问')}</h1>}
+        {locale === 'zh-CN' ? <h1 ref={heading} tabIndex={-1} className="landing-wordmark">
+          <span className="landing-wordmark-text">{t('课堂内容，即时问')}</span>
+          <LandingWordmark/>
+        </h1> : <h1 ref={heading} tabIndex={-1}>{t('课堂内容，即时问')}</h1>}
         <p className="landing-tagline" lang="en">Listen · Ask · Understand</p>
         <button type="button" className="landing-cta" onClick={() => switchMode('register')}>{t('开始使用')}<ArrowRight size={19} aria-hidden="true"/></button>
+        {config.asrQuotaMode==='trial'&&<p className="landing-trial-note">{t('本站仅供体验。每个新账号一次性赠送 1 小时转写，用完不自动恢复。继续使用可自行部署，也可以让 AI 帮忙。')}</p>}
       </section>
       <LandingDemo/>
-    </main> : <main className="account-main">
+      <section className="landing-deployment" aria-label={t('自行部署')}><DeploymentGuide/></section>
+    </main> : legalPage ? <LegalPage kind={mode} initial={config.legal} onBack={() => switchMode(legalReturn.current)}/> : <main className="account-main">
       <button type="button" className="account-back" disabled={busy || sending} onClick={() => switchMode('home')}><ArrowLeft size={16} aria-hidden="true"/>{t('返回首页')}</button>
       <section className="account-content" aria-labelledby="welcome-title">
         <div className="welcome-form" id="welcome-form" tabIndex={-1}>
           <h2 ref={heading} id="welcome-title" tabIndex={-1}>{forgot ? t('找回密码') : registering ? t('创建账号') : t('登录即问')}</h2>
+          {registering&&config.asrQuotaMode==='trial'&&<p className="welcome-trial-note">{t('本站仅供体验。每个新账号一次性赠送 1 小时转写，用完不自动恢复。继续使用可自行部署，也可以让 AI 帮忙。')}</p>}
           {forgot && <p className="welcome-form-description">{t('输入注册邮箱并填入验证码，设置新密码。')}</p>}
           <form onSubmit={submit} aria-busy={busy}>
             <fieldset disabled={busy}>
               <div className="welcome-field">
                 <label htmlFor="welcome-email">{forgot ? t('注册邮箱') : t('邮箱')}</label>
-                <div className={forgot ? 'welcome-code-row' : undefined}>
-                  <input id="welcome-email" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={254} required value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com"/>
-                  {forgot && <button type="button" className="welcome-code-send" disabled={sending || cooldown > 0 || !email.trim()} onClick={sendCode}>{cooldown > 0 ? t('{count} 秒后再试', {count: cooldown}) : sending ? t('发送中…') : t('获取验证码')}</button>}
+                <div className={needsCode ? 'welcome-code-row' : undefined}>
+                  <input id="welcome-email" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={254} required value={email} disabled={sending} onChange={event => {setEmail(event.target.value);setCode('');}}/>
+                  {needsCode && <button type="button" className="welcome-code-send" disabled={sending || cooldown > 0 || !email.trim()} onClick={sendCode}>{cooldown > 0 ? t('{count} 秒后再试', {count: cooldown}) : sending ? t('发送中…') : t('获取验证码')}</button>}
                 </div>
               </div>
-              {forgot && <div className="welcome-field">
+              {needsCode && <div className="welcome-field">
                 <label htmlFor="welcome-code">{t('邮箱验证码')}</label>
                 <input id="welcome-code" name="code" autoComplete="one-time-code" inputMode="numeric" pattern="\d{6}" maxLength={6} required value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ''))} placeholder={t('6 位数字')}/>
               </div>}
@@ -156,16 +169,16 @@ export function Auth({config, onAuth, notice, setNotice, brand}) {
                 <input id="welcome-confirm" name="confirm" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} maxLength={128} required value={confirm} onChange={event => setConfirm(event.target.value)}/>
               </div>}
               {notice && <p className={`welcome-notice is-${noticeKind}`} role={noticeKind === 'error' ? 'alert' : 'status'}>{translateMessage(notice)}</p>}
-              <button className="welcome-submit" type="submit" disabled={busy}>
+              <button className="welcome-submit" type="submit" disabled={busy || sending}>
                 <span>{busy ? t('请稍候…') : forgot ? t('重置密码') : registering ? t('创建账号') : t('登录')}</span>
                 {busy ? <LoaderCircle className="spin" size={18} aria-hidden="true"/> : <ArrowRight size={18} aria-hidden="true"/>}
               </button>
             </fieldset>
           </form>
           <div className="welcome-switch">
-            {forgot ? <button className="welcome-link" disabled={busy || sending} onClick={() => switchMode('login')}>{t('返回登录')}</button> : <><span>{registering ? t('已经有账号？') : t('还没有账号？')}</span><button className="welcome-link" disabled={busy} onClick={() => switchMode(registering ? 'login' : 'register')}>{registering ? t('登录') : t('创建账号')}<ArrowRight size={14} aria-hidden="true"/></button></>}
+            {forgot ? <button className="welcome-link" disabled={busy || sending} onClick={() => switchMode('login')}>{t('返回登录')}</button> : <><span>{registering ? t('已经有账号？') : t('还没有账号？')}</span><button className="welcome-link" disabled={busy || sending} onClick={() => switchMode(registering ? 'login' : 'register')}>{registering ? t('登录') : t('创建账号')}<ArrowRight size={14} aria-hidden="true"/></button></>}
           </div>
-          {config.registrationOpen === false && registering && <p className="welcome-invite-note">{t('注册名额已满，已有账号仍可登录。')}</p>}
+          {registering&&config.asrQuotaMode==='trial'&&<DeploymentGuide/>}
         </div>
       </section>
 

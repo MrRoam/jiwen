@@ -1,3 +1,4 @@
+import {createAccountFetch} from './legal-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -12,6 +13,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function freePort(){const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));return port;}
 test('页面 API 配置：无邀请注册、管理员权限、保存即生效、录音期间保护和重启持久化',{timeout:30000},async()=>{
   const dir=mkdtempSync(path.join(tmpdir(),'jiwen-api-')),port=await freePort(),base=`http://127.0.0.1:${port}`,authorizations=[];
+  const fetch=createAccountFetch(dir);
   const mock=createServer(async(req,res)=>{
     authorizations.push(req.headers.authorization);for await(const chunk of req){}
     res.writeHead(200,{'Content-Type':'text/event-stream'});res.end('data: {"choices":[{"delta":{"content":"连接成功"}}]}\n\ndata: [DONE]\n\n');
@@ -19,8 +21,8 @@ test('页面 API 配置：无邀请注册、管理员权限、保存即生效、
   const ws=new WebSocketServer({server:mock});ws.on('connection',(socket,req)=>{authorizations.push(req.headers.authorization);socket.on('message',()=>socket.send(JSON.stringify({header:{event:'task-started'}})));});
   await new Promise(resolve=>mock.listen(0,'127.0.0.1',resolve));
   let child,logs='';
-  async function start(){
-    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:dir,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',ADMIN_EMAIL:'',DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',ASR_PROVIDER:'remote',LLM_ROUTING:'qwen-only'},stdio:['ignore','pipe','pipe']});
+  async function start(apiConfigEnabled='true'){
+    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:dir,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',MIN_FREE_DISK_BYTES:'1',ADMIN_EMAIL:'',API_CONFIG_ENABLED:apiConfigEnabled,DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',ASR_PROVIDER:'remote',LLM_ROUTING:'qwen-only'},stdio:['ignore','pipe','pipe']});
     child.stdout.on('data',chunk=>logs+=chunk);child.stderr.on('data',chunk=>logs+=chunk);
     for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok)return;}catch{}await delay(50);}assert.fail('启动失败 '+logs);
   }
@@ -31,6 +33,7 @@ test('页面 API 配置：无邀请注册、管理员权限、保存即生效、
     await start();assert.equal((await request('/services/config')).status,401);
     const admin=await register('owner@example.test'),other=await register('student@example.test');
     assert.equal((await(await request('/me',{cookie:admin})).json()).user.isAdmin,true);
+    assert.equal((await(await request('/me',{cookie:admin})).json()).config.apiConfigEnabled,true);
     assert.equal((await(await request('/me',{cookie:other})).json()).user.isAdmin,false);
     assert.equal((await request('/services/config',{cookie:other})).status,403);
     assert.equal((await request('/services/config',{method:'PUT',cookie:other,body:{LLM_API_KEY:'forbidden'}})).status,403);
@@ -51,6 +54,16 @@ test('页面 API 配置：无邀请注册、管理员权限、保存即生效、
     const persisted=await(await request('/services/config',{cookie:admin})).json();assert.equal(persisted.LLM_MODEL,'fixture-model');assert.equal(persisted.LLM_API_KEY_CONFIGURED,true);assert.ok(!JSON.stringify(persisted).includes('config-fixture'));
     assert.equal((await request('/services/config/llm',{method:'DELETE',cookie:other})).status,403);
     const cleared=await(await request('/services/config/llm',{method:'DELETE',cookie:admin})).json();assert.equal(cleared.config.llmReady,false);
+    const hostedConfig=readFileSync(path.join(dir,'service-config.json'),'utf8');
+    await stop();await start('false');
+    const hosted=await(await request('/me',{cookie:admin})).json();
+    assert.equal(hosted.user.isAdmin,true);assert.equal(hosted.config.apiConfigEnabled,false);assert.equal(hosted.config.asrReady,true);
+    assert.equal((await request('/services/config',{cookie:admin})).status,403);
+    assert.equal((await request('/services/config',{method:'PUT',cookie:admin,body:{LLM_MODEL:'forbidden'}})).status,403);
+    assert.equal((await request('/services/config/asr',{method:'DELETE',cookie:admin})).status,403);
+    assert.equal(readFileSync(path.join(dir,'service-config.json'),'utf8'),hostedConfig);
+    assert.equal((await request('/lessons',{cookie:other})).status,200);
+    assert.equal((await(await request('/services/test',{method:'POST',cookie:other,body:{service:'asr'}})).json()).ok,true);
     assert.ok(!logs.includes('asr-config-fixture'));assert.ok(!logs.includes('llm-config-fixture'));
   }finally{await stop();ws.clients.forEach(socket=>socket.terminate());await new Promise(resolve=>ws.close(resolve));mock.closeAllConnections();await new Promise(resolve=>mock.close(resolve));rmSync(dir,{recursive:true,force:true});}
 });

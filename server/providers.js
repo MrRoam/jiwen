@@ -32,15 +32,18 @@ export function paraformer({key,url,model,onReady,onSentence,onUsage,onError,onF
   return {send(data){if(!ready||ws.readyState!==WebSocket.OPEN)return false;if(ws.bufferedAmount>32000*10){fail('转写网络积压，已停止本次识别。');return false;}totalBytes+=data.length;ws.send(data);return true;},finish:end,close(){finished=true;clearTimeout(timer);ws.terminate();}};
 }
 
-export async function testService({service,key,url,model,onUsage,signal}) {
+export async function testService({service,key,url,model,onUsage,signal,createASR=paraformer}) {
   const started=Date.now();
   if(!key)return {ok:false,message:'未配置 API 密钥，请在侧栏「API 配置」中保存并测试。',elapsedMs:0};
   try{
     if(service==='asr')await new Promise((resolve,reject)=>{
       let provider;
-      const timer=setTimeout(()=>{provider?.close();reject(new Error('转写测试超时，请检查网络和服务地址。'));},18000);
-      const end=error=>{clearTimeout(timer);provider?.close();error?reject(new Error(error)):resolve();};
-      try{provider=paraformer({key,url,model,onReady:()=>end(),onSentence:()=>{},onUsage:()=>{},onError:end,onFinish:()=>end('转写任务提前结束。')});}catch(error){end(error.message);}
+      const timer=setTimeout(()=>end('转写测试超时，请检查网络和服务地址。'),18000);
+      const end=error=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);provider?.close();error?reject(new Error(error)):resolve();};
+      const abort=()=>end('转写测试已取消。');
+      if(signal?.aborted){abort();return;}
+      signal?.addEventListener('abort',abort,{once:true});
+      try{provider=createASR({key,url,model,onReady:()=>end(),onSentence:()=>{},onUsage:()=>{},onError:end,onFinish:()=>end('转写任务提前结束。')});}catch(error){end(error.message);}
     });
     else {let text='';await streamAnswer({key,baseUrl:url,model,messages:[{role:'user',content:'请只回复“连接成功”。'}],signal:signal?AbortSignal.any([signal,AbortSignal.timeout(20000)]):AbortSignal.timeout(20000),onUsage,onText:value=>text+=value});if(!text.trim())throw new Error('问答服务没有返回内容。');}
     return {ok:true,message:service==='asr'?'转写任务启动成功；开始录音后可验证麦克风和识别结果。':'问答接口已返回测试回答。',elapsedMs:Date.now()-started};

@@ -61,7 +61,7 @@ export function registerHelpRoute(app,{db,lesson,reserveRequest,answerRouter,cha
       timer=setTimeout(()=>controller.abort(),timeoutMs);
       await answerRouter.answer({userId:req.user.id,permit,quick:true,maxTokens:256,signal:controller.signal,
         messages:[{role:'system',content:english?ENGLISH_HELP_PROMPT:HELP_PROMPT},{role:'user',content:`以下是点击时冻结的课堂原文（JSON数据）：\n${JSON.stringify(snapshot)}`}],
-        onText:text=>{answer+=text;emit({type:'delta',text});}});
+        onText:text=>{if(Buffer.byteLength(answer)+Buffer.byteLength(text)>64*1024){controller.abort();throw new Error('回答过长，已保留收到的内容。');}answer+=text;emit({type:'delta',text});}});
       controller.signal.throwIfAborted();
       if(!answer.trim())throw new Error('问答服务没有返回内容，请重试。');
       db.prepare("UPDATE messages SET content=?,status='complete' WHERE id=?").run(answer,aid);

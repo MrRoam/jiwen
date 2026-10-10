@@ -1,3 +1,4 @@
+import {legalFetch as fetch} from './legal-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';

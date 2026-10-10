@@ -2,7 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {WebSocketServer} from 'ws';
-import {paraformer,streamAnswer} from '../server/providers.js';
+import {paraformer,streamAnswer,testService} from '../server/providers.js';
+import {createASRStartQueue} from '../server/asr-start-queue.js';
+
+test('取消排队中的连接测试不创建云任务，也不会占住启动队列',async()=>{
+  const queue=createASRStartQueue({startsPerSecond:1});
+  queue.create(()=>({send:()=>true,finish(){},close(){}}),assert.fail);
+  const controller=new AbortController();let created=0;
+  const result=testService({service:'asr',key:'test-only',signal:controller.signal,createASR:options=>queue.create(()=>{created++;return paraformer(options);},options.onError)});
+  controller.abort();const checked=await result;assert.equal(checked.ok,false);assert.match(checked.message,/取消/);assert.equal(created,0);queue.close();
+});
 
 test('Paraformer 遵循启动、音频、结束协议，并等待最后一句',async()=>{
   const server=createServer(),wss=new WebSocketServer({server});await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`ws://127.0.0.1:${server.address().port}`;let run,finish,binary;

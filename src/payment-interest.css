@@ -1,0 +1,38 @@
+.payment-interest{display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;padding:16px 14px 12px 18px;margin:0 0 20px;border:1px solid #e4e9dc;border-radius:14px;background:#f7f9f0;color:var(--ink,#25332e)}
+.payment-interest-copy{flex:1;min-width:0}
+.payment-interest-copy h3{margin:0;font-size:14px;font-weight:600;line-height:1.5}
+.payment-interest-copy p{margin:6px 0 0;font-size:12px;line-height:1.6;color:var(--secondary,#617068)}
+.payment-interest-count{min-height:18px;margin-top:14px;font-size:11px;line-height:1.6;color:#50614c;font-variant-numeric:tabular-nums}
+.payment-interest-count>span{display:inline-block;animation:payment-count-in .24s ease-out}
+.payment-interest-you{color:#71806b}
+.payment-interest-count .payment-interest-error{color:#963e32}
+.payment-interest .payment-interest-ring{display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:0;width:104px;min-height:112px;padding:0;border:0;border-radius:12px;background:transparent;color:#42674d;cursor:pointer;touch-action:manipulation;user-select:none;filter:none}
+.payment-interest .payment-interest-ring:hover{background:#eef3e3}
+.payment-interest .payment-interest-ring:active:not(:disabled){transform:none;filter:none;background:#eaf0dd}
+.payment-interest-stage{display:block;position:relative;width:104px;height:93px}
+.payment-interest-bell{display:block;width:100%;height:100%;transform-origin:50% 85%}
+.payment-bell{display:block;width:100%;height:100%;overflow:visible}
+.payment-bell-knob{transition:transform 120ms ease}
+.payment-interest-ring:active .payment-bell-knob{transform:translateY(5px)}
+.payment-interest-ring:active .payment-bell-body{transform:translateY(2px)}
+.payment-interest-ring:hover .payment-interest-bell:not(.is-ringing){transform:rotate(-4deg);transition:transform 220ms ease}
+.payment-interest-hint{font-size:11px;font-weight:500;line-height:19px}
+.payment-interest-bell.is-ringing .payment-bell-body{transform-origin:60px 85px;animation:payment-bell-ring 620ms both}
+.payment-interest-bell.is-ringing .payment-bell-knob{animation:payment-knob-press 220ms both}
+.payment-interest-bell.is-ringing .payment-bell-shadow{transform-origin:60px 96px;animation:payment-shadow 620ms both}
+.payment-interest-bell.is-ringing .payment-bell-eyes{animation:payment-bell-blink 620ms both;transform-origin:60px 58px}
+.payment-interest-bursts{position:absolute;inset:0;pointer-events:none}
+.payment-interest-burst{position:absolute;inset:0;--burst-tilt:-9deg}
+.payment-interest-burst b{position:absolute;left:38px;top:18px;z-index:1;padding:3px 8px;border:1px solid #cfdbb8;border-radius:9px;background:#fffef5;color:#42674d;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 4px #42674d0d;animation:payment-ding 900ms both}
+.payment-spark{position:absolute;font-style:normal;color:#b69a51;animation:payment-spark 700ms ease-out both}
+.payment-spark-one{left:19px;top:39px;font-size:15px;--spark-x:-16px;--spark-y:-25px;--spark-turn:-25deg}
+.payment-spark-two{right:11px;top:44px;font-size:20px;--spark-x:17px;--spark-y:-18px;--spark-turn:30deg;animation-delay:35ms}
+.payment-spark-three{left:69px;top:28px;font-size:10px;--spark-x:10px;--spark-y:-34px;--spark-turn:55deg;animation-delay:70ms}
+@keyframes payment-bell-ring{0%{transform:translateY(0) scale(1)}12%{transform:translateY(3px) scale(1.08,.87)}32%{transform:translateY(-7px) rotate(-10deg) scale(.95,1.06)}49%{transform:translateY(-3px) rotate(9deg)}65%{transform:translateY(0) rotate(-5deg)}82%{transform:rotate(2deg)}100%{transform:translateY(0) rotate(0) scale(1)}}
+@keyframes payment-knob-press{0%,100%{transform:translateY(0)}30%{transform:translateY(5px)}}
+@keyframes payment-shadow{0%,100%{transform:scaleX(1);opacity:.12}32%{transform:scaleX(.82);opacity:.07}65%{transform:scaleX(1.03);opacity:.12}}
+@keyframes payment-bell-blink{0%,20%,70%,100%{transform:scaleY(1)}38%,55%{transform:scaleY(.2)}}
+@keyframes payment-ding{0%{opacity:0;transform:translateY(0) rotate(var(--burst-tilt)) scale(.7)}18%{opacity:1;transform:translateY(-10px) rotate(var(--burst-tilt)) scale(1.05)}65%{opacity:1;transform:translateY(-23px) rotate(var(--burst-tilt)) scale(1)}100%{opacity:0;transform:translateY(-33px) rotate(var(--burst-tilt)) scale(.95)}}
+@keyframes payment-spark{0%{opacity:0;transform:translate(0,0) scale(.2)}20%{opacity:1}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) rotate(var(--spark-turn)) scale(1)}}
+@keyframes payment-count-in{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.payment-interest *,.payment-interest-ring:hover .payment-interest-bell:not(.is-ringing){animation:none!important;transition:none!important;transform:none!important}.payment-interest-bursts{display:none}}

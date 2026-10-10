@@ -3,6 +3,8 @@
 !package-lock.json
 !index.html
 !vite.config.js
+!console.html
+!vite.console.config.js
 !public/
 !public/**
 !src/

@@ -1,7 +1,8 @@
+import {legalFetch as fetch,createAccountFetch} from './legal-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {createServer as createTcpServer} from 'node:net';
+import {fakeSmtp,decodeBody} from './smtp-fixture.js';
 import {spawn} from 'node:child_process';
 import {mkdtempSync,mkdirSync,rmSync} from 'node:fs';
 import {once} from 'node:events';
@@ -12,41 +13,12 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 async function port(){const s=createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p;}
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 
-// 最小 SMTP 服务端：够 nodemailer 完成 EHLO/AUTH LOGIN/DATA 一轮握手，捕获邮件正文。
-function fakeSmtp(captured){
-  const s=createTcpServer(socket=>{
-    let buf='',dataMode=false,authStep=0;
-    const send=x=>socket.write(x+'\r\n');
-    send('220 test.local ESMTP');
-    socket.on('data',chunk=>{buf+=chunk.toString();
-      for(;;){
-        if(dataMode){const end=buf.indexOf('\r\n.\r\n');if(end<0)return;captured.push(buf.slice(0,end));buf=buf.slice(end+5);dataMode=false;send('250 ok');continue;}
-        const i=buf.indexOf('\r\n');if(i<0)return;const line=buf.slice(0,i);buf=buf.slice(i+2);const cmd=line.trim().toUpperCase();
-        if(cmd.startsWith('EHLO')||cmd.startsWith('HELO'))send('250-test.local\r\n250-AUTH LOGIN PLAIN\r\n250 SMTPUTF8');
-        else if(cmd.startsWith('AUTH LOGIN')){authStep=1;send('334 VXNlcm5hbWU6');}
-        else if(authStep===1){authStep=2;send('334 UGFzc3dvcmQ6');}
-        else if(authStep===2){authStep=0;send('235 ok');}
-        else if(cmd.startsWith('MAIL FROM')||cmd.startsWith('RCPT TO'))send('250 ok');
-        else if(cmd.startsWith('DATA')){dataMode=true;send('354 go');}
-        else if(cmd.startsWith('QUIT')){send('221 bye');socket.end();}
-        else send('250 ok');
-      }});
-    socket.on('error',()=>{});
-  });
-  return s;
-}
-function decodeBody(raw){
-  const enc=raw.match(/Content-Transfer-Encoding:\s*([^\r\n]+)/i)?.[1]?.trim().toLowerCase();
-  const body=raw.split(/\r?\n\r?\n/).slice(1).join('\r\n');
-  if(enc==='base64')return Buffer.from(body.replace(/\s+/g,''),'base64').toString('utf8');
-  if(enc==='quoted-printable')return Buffer.from(body.replace(/=\r?\n/g,'').replace(/=([0-9A-F]{2})/g,(_,h)=>String.fromCharCode(parseInt(h,16))),'binary').toString('utf8');
-  return body;
-}
 test('忘记密码：发码限频、错误验证码拒绝、重置后旧密码失效', {timeout:60000},async()=>{
   const scratch=path.resolve(root,'output/test-tmp');mkdirSync(scratch,{recursive:true});const directory=mkdtempSync(path.join(scratch,'reset-'));
+  const fetch=createAccountFetch(directory);
   const captured=[],smtp=fakeSmtp(captured);await new Promise(r=>smtp.listen(0,'127.0.0.1',r));
   const smtpPort=smtp.address().port,appPort=await port(),base=`http://127.0.0.1:${appPort}`;
-  const child=spawn(process.execPath,['server/index.js'],{cwd:root,windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false',SMTP_HOST:'127.0.0.1',SMTP_PORT:String(smtpPort),SMTP_USER:'noreply@test.local',SMTP_PASS:'x'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
+  const child=spawn(process.execPath,['server/index.js','--production'],{cwd:root,windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false',SMTP_HOST:'127.0.0.1',SMTP_PORT:String(smtpPort),SMTP_USER:'noreply@test.local',SMTP_PASS:'x'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
   const request=async(route,{cookie,method='GET',body}={})=>fetch(base+route,{method,headers:{...(cookie?{Cookie:cookie}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
   try{
     let connected=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok){connected=true;break;}}catch{}await delay(50);}assert.ok(connected,logs);
@@ -82,8 +54,9 @@ test('忘记密码：发码限频、错误验证码拒绝、重置后旧密码�
 });
 test('未配置邮件服务时，找回密码返回 503', {timeout:30000},async()=>{
   const scratch=path.resolve(root,'output/test-tmp');mkdirSync(scratch,{recursive:true});const directory=mkdtempSync(path.join(scratch,'nomail-'));
+  const fetch=createAccountFetch(directory);
   const appPort=await port(),base=`http://127.0.0.1:${appPort}`;
-  const child=spawn(process.execPath,['server/index.js'],{cwd:root,windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
+  const child=spawn(process.execPath,['server/index.js','--production'],{cwd:root,windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
   try{
     let connected=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok){connected=true;break;}}catch{}await delay(50);}assert.ok(connected,logs);
     assert.equal((await request503(base)).status,503);

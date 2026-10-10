@@ -1,3 +1,4 @@
+import {createAccountFetch} from './legal-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -10,6 +11,7 @@ test('修改问题保留原对话和前文，停止保存部分回答且可继�
   const calls=[];const provider=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const body=JSON.parse(raw);calls.push(body);res.writeHead(200,{'Content-Type':'text/event-stream'});res.write('data: {"choices":[{"delta":{"content":"已收到的内容"}}]}\n\n');if(!JSON.stringify(body).includes('慢回答'))res.end('data: [DONE]\n\n');});
   await new Promise(r=>provider.listen(0,'127.0.0.1',r));const probe=createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
   const scratch=path.resolve('output/test-tmp');mkdirSync(scratch,{recursive:true});const dir=mkdtempSync(path.join(scratch,'chat-'));
+  const fetch=createAccountFetch(dir);
 
   const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,LLM_API_KEY:'test',LLM_BASE_URL:`http://127.0.0.1:${provider.address().port}`,SECURE_COOKIE:'false',DAILY_QUESTIONS:'20',GLOBAL_REQUESTS_PER_MINUTE:'50'},stdio:'ignore'});
   let cookie='';const request=(url,body)=>fetch(`http://127.0.0.1:${port}/api${url}`,{method:body?'POST':'GET',headers:{Cookie:cookie,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});

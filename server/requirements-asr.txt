@@ -1,0 +1,4 @@
+# PyTorch/torchaudio 由 setup-local-asr.ps1 按 CPU/CUDA 设备单独安装。
+funasr==1.4.16
+faster-whisper==1.2.1
+truststore>=0.10,<1

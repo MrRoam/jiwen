@@ -3,7 +3,7 @@
 .help-control+.composer-area{padding-top:0}
 /* 紧凑按键：深红底座、柔和高光，按下时键帽落到底座上。 */
 .help-toolbar{display:flex;justify-content:flex-end;flex-shrink:0;min-height:48px;padding-bottom:4px}
-.help-button{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:104px;height:44px;padding:0 16px;border:0;border-radius:12px;background:linear-gradient(180deg,#c8444b,#b8323c);color:#fff;box-shadow:0 3px 0 #882530,0 4px 6px #76232b20,inset 0 1px 0 #ffffff38;touch-action:manipulation;user-select:none;transform:translateY(0);transition:transform 120ms ease-out,box-shadow 120ms ease-out,filter 120ms ease-out}
+.help-button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:104px;width:auto;white-space:nowrap;height:44px;padding:0 16px;border:0;border-radius:12px;background:linear-gradient(180deg,#c8444b,#b8323c);color:#fff;box-shadow:0 3px 0 #882530,0 4px 6px #76232b20,inset 0 1px 0 #ffffff38;touch-action:manipulation;user-select:none;transform:translateY(0);transition:transform 120ms ease-out,box-shadow 120ms ease-out,filter 120ms ease-out}
 .help-cap{font-family:inherit;font-size:13px;font-weight:750;letter-spacing:.08em;line-height:1}
 .help-button>svg{flex-shrink:0;stroke-width:2;opacity:.9}
 .help-button:hover{background:linear-gradient(180deg,#d34e55,#bf3641);color:#fff;box-shadow:0 3px 0 #882530,0 5px 8px #76232b28,inset 0 1px 0 #ffffff45}
@@ -20,14 +20,12 @@
 .help-answer img{max-width:100%;height:auto}.help-answer pre{max-width:100%;overflow:auto;font-size:13px}.help-answer table{display:block;max-width:100%;overflow:auto}
 .help-waiting,.help-error{font-size:13px;line-height:1.65;margin:6px 0 8px;color:#526647}
 .help-error{color:#92342d}
-.help-expand{font-size:12px;padding:5px 0;flex-shrink:0;align-self:flex-start}
-@media(max-width:700px){.help-control{margin-left:var(--panel-inset);margin-right:var(--panel-inset)}.help-result-body{max-height:140px}.help-answer{font-size:17px}.help-result-heading .icon{min-width:40px;min-height:40px}.help-expand{min-height:40px;padding:4px 0}.help-toolbar{margin-bottom:0}}
+@media(max-width:700px){.help-control{margin-left:var(--panel-inset);margin-right:var(--panel-inset)}.help-result-body{max-height:140px}.help-answer{font-size:17px}.help-result-heading .icon{min-width:40px;min-height:40px}.help-toolbar{margin-bottom:0}}
 @media(max-width:700px) and (max-height:540px){
   .classroom-workspace:has(.help-result),.classroom-workspace:has(.help-result):has(.composer textarea:focus){grid-template-rows:minmax(0,1fr) minmax(0,4fr)}
   .chat-panel:has(.help-result)>.question-empty{display:none}
   .chat-panel:has(.help-result)>.messages{padding-top:0;padding-bottom:0}
   .help-result{position:relative;padding-top:6px;padding-bottom:6px}
-  .help-expand{position:absolute;right:52px;top:6px;min-height:40px;padding:4px 6px}
   .chat-panel:has(.help-result) .quote-list{max-height:40px}
 }
 @media(max-width:700px) and (max-height:380px){

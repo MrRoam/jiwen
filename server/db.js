@@ -8,6 +8,7 @@ export function openDatabase(directory) {
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
     CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS payment_interest(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS lessons(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),title TEXT NOT NULL,created_at TEXT NOT NULL,demo INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS recordings(id TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,offset_ms INTEGER NOT NULL,duration_ms INTEGER NOT NULL DEFAULT 0,mime TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'recording',created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS chunks(recording_id TEXT NOT NULL REFERENCES recordings(id) ON DELETE CASCADE,seq INTEGER NOT NULL,size INTEGER NOT NULL,hash TEXT NOT NULL,PRIMARY KEY(recording_id,seq));
@@ -19,6 +20,12 @@ export function openDatabase(directory) {
     CREATE INDEX IF NOT EXISTS lessons_user ON lessons(user_id);
     CREATE INDEX IF NOT EXISTS messages_conversation ON messages(conversation_id,created_at);
   `);
+  if(!db.prepare('PRAGMA table_info(recordings)').all().some(column=>column.name==='expected_chunks'))db.exec('ALTER TABLE recordings ADD COLUMN expected_chunks INTEGER NOT NULL DEFAULT 0');
+  const recordingColumns=new Set(db.prepare('PRAGMA table_info(recordings)').all().map(column=>column.name));
+  for(const [name,type] of Object.entries({transcription_status:"TEXT NOT NULL DEFAULT 'idle'",transcription_error:"TEXT NOT NULL DEFAULT ''",transcription_retry_at:"TEXT NOT NULL DEFAULT ''",transcription_processed_ms:'INTEGER NOT NULL DEFAULT 0',transcription_charged_ms:'INTEGER NOT NULL DEFAULT 0',transcription_needed:'INTEGER NOT NULL DEFAULT 0',transcription_covered_ms:'INTEGER NOT NULL DEFAULT 0'})){
+    if(!recordingColumns.has(name))db.exec(`ALTER TABLE recordings ADD COLUMN ${name} ${type}`);
+  }
+  db.exec("UPDATE recordings SET transcription_status='queued',transcription_error='' WHERE transcription_status='running'");
   // 重启不能让“生成中”或“录音中”永远挂起；音频块仍可恢复。
   db.exec("UPDATE messages SET status='failed' WHERE status='streaming'; UPDATE recordings SET status='interrupted' WHERE status IN ('recording','processing')");
   return db;

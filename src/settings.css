@@ -58,10 +58,20 @@
 .settings-account-row{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:64px;padding:14px 0;gap:16px;border:0;border-top:1px solid #e5ebe1;border-bottom:1px solid #e5ebe1;background:transparent;text-align:left;color:#304435}
 .settings-account-row:hover{background:#f8faf6}
 .settings-account-row>span:last-child{display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:13px;color:#315d41}
-.settings-usage{position:relative;padding:24px 0;color:#304435;font-size:14px}
-.settings-usage>strong{display:block;margin-top:12px;font-size:20px;font-weight:550;font-variant-numeric:tabular-nums}
-.settings-usage strong small{font-size:13px;font-weight:400;color:#62725e}
-.settings-usage p{margin:8px 0 0;font-size:12px;color:#62725e}
+.settings-usage{padding:0 0 20px;color:#304435;font-size:13px}
+.settings-usage-row+.settings-usage-row{margin-top:20px}
+.settings-usage-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.settings-usage-label{display:flex;align-items:baseline;gap:8px}
+.settings-usage-label small{font-size:11px;color:#62725e}
+.settings-usage-heading strong{font-size:13px;font-weight:550;font-variant-numeric:tabular-nums}
+.settings-usage-progress{display:block;appearance:none;width:100%;height:6px;margin-top:10px;border:0;border-radius:3px;background:#e5ebe1;overflow:hidden;accent-color:#315d41}
+.settings-usage-progress::-webkit-progress-bar{background:#e5ebe1;border-radius:3px}
+.settings-usage-progress::-webkit-progress-value{background:#315d41;border-radius:3px}
+.settings-usage-progress::-moz-progress-bar{background:#315d41;border-radius:3px}
+.settings-usage-row.is-exhausted .settings-usage-heading strong{color:#963e32}
+.settings-usage p{margin:7px 0 0;font-size:11px;line-height:1.5;color:#62725e;overflow-wrap:anywhere}
+.settings-usage-retry{display:flex;align-items:center;gap:6px;min-height:44px;margin:6px 0 -8px;padding:0;border:0;background:transparent;color:#315d41;font-size:13px}
+.settings-usage-retry:hover{color:#244b3a}
 .settings-logout{border-top:1px solid #e5ebe1;margin-top:8px;padding-top:20px}
 .settings-logout>button{width:100%;min-height:44px;border:1px solid #e5d8d2;border-radius:8px;color:#963e32;background:#fff;font-size:14px;gap:9px}
 .settings-logout>button:hover:not(:disabled){background:#fcf3f0;border-color:#d8b9ae}
@@ -71,22 +81,25 @@
 .settings-password .form-input::placeholder{color:#62725e}
 .settings-password-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:26px}
 .settings-password-actions>button{min-height:44px;padding:10px 16px;font-size:13px}
-.profile-entry{flex:1;min-width:0;display:flex;justify-content:flex-start;gap:9px;padding:6px 4px;margin:-6px -4px;border:0;border-radius:8px;background:transparent;color:#304435;text-align:left;min-height:44px}
+.profile-entry{flex:1;min-width:0;display:flex;justify-content:flex-start;gap:10px;padding:8px;margin:0 -4px;border:0;border-radius:8px;background:transparent;color:#304435;text-align:left;min-height:48px}
 .profile-entry:hover,.profile-entry[aria-expanded=true]{background:#e3eadc}
 .profile-entry .avatar{flex-shrink:0}
 .profile-entry strong{flex:1;min-width:0}
 .profile-entry>svg{flex-shrink:0;color:#6a7e6a}
 .sidebar-rail-bottom{display:flex;flex-direction:column;gap:12px;margin-top:auto;padding-bottom:20px}
 .account-overlay.modal-overlay{background:transparent;backdrop-filter:none;padding:0}
-.account-panel.modal{border:1px solid #dce5d6;border-radius:14px;box-shadow:0 10px 36px #1d342526;padding:0;max-width:calc(100vw - 24px)}
+.account-panel.modal{border:0;border-radius:14px;box-shadow:var(--shadow-raised);padding:0;max-width:calc(100vw - 24px)}
 .account-panel .modal-heading{padding:14px 20px;background:#f8faf6}
 .account-panel .modal-heading h2{font-size:17px;color:#25392d;font-weight:600}
 .account-panel .modal-body{padding:0 20px 20px}
 .account-panel .settings-account-identity{padding:20px 0}
 .account-panel .settings-account-identity .avatar{width:36px;height:36px;font-size:14px}
 .account-panel .settings-account-identity strong{font-size:14px}
-.account-panel .settings-account-row{min-height:56px}
-.account-panel .settings-usage{padding:20px 0}
+.account-menu-actions{padding:8px 0;border-top:1px solid var(--border)}
+.account-menu-actions .settings-account-row{min-height:44px;padding:10px 8px;gap:12px;border:0;border-radius:8px}
+.account-menu-actions .settings-account-row:hover{background:var(--soft)}
+.account-menu-actions .settings-account-row>svg{flex-shrink:0;color:var(--secondary)}
+.account-panel .settings-usage{padding:0 0 20px}
 .account-panel .settings-logout{margin-top:0;padding-top:16px}
 @media(max-width:700px){
   .modal-overlay:has(>.settings-modal){padding:0}

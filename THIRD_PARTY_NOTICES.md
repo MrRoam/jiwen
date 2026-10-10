@@ -7,6 +7,7 @@
 | React、Vite、Express、ws | 界面、构建、服务端 | 各项目 MIT 许可，详见安装包 LICENSE |
 | react-markdown、remark、rehype、KaTeX | Markdown 和公式 | 各组件保留其 MIT 等许可 |
 | lucide-react | 界面图标 | ISC，详见安装包 LICENSE |
+| Noto Serif SC | 首页标题的固定 SVG 字形 | SIL Open Font License 1.1，见 `public/brand/NotoSerifSC-OFL.txt`；仅保留标题轮廓，无需加载字体文件 |
 | nodemailer | 邮件找回密码 | MIT-0，详见安装包 LICENSE |
 | ffmpeg-static | 安装平台对应 FFmpeg、音频转码 | 包标记为 GPL-3.0-or-later；[项目及构建来源](https://github.com/eugeneware/ffmpeg-static) |
 | faster-whisper（可选） | 本地语音识别 | MIT；模型权重遵循其各自许可 |

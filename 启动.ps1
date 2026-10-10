@@ -33,3 +33,4 @@ try {
     Stop-Job $browserJob -ErrorAction SilentlyContinue
     Remove-Job $browserJob -Force -ErrorAction SilentlyContinue
 }
+

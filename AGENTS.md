@@ -23,7 +23,10 @@
 | 全部 JavaScript 测试 | `npm test` |
 | 前端构建 | `npm run build` |
 | 启动生产服务（先构建） | `npm start` |
+| 重启本机内测（自动构建、替换旧服务并验证公网） | `powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File deploy/start-trial.ps1 -NoBrowser` |
+| 停止本机内测 | `powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File deploy/stop-trial.ps1` |
 
+`tests/` 使用 Node 内置测试运行器；按改动选择对应的 `*.test.js`。`npm test` 不包含 `tests/trial-startup.test.ps1`，改动内测启动脚本时需单独检查该测试。项目没有配置 lint 或 typecheck 脚本，不虚构验证命令。
 
 ## 数据与行为边界
 
@@ -46,6 +49,7 @@
 | 账号与使用额度 | `docs/账号与额度.md` |
 | 问答路由 | `docs/OpenRouter优先路由.md` |
 | Jev 重点标记 | `docs/Jev重点标记.md` |
+| 本机内测试用 | `deploy/内测试用.md` |
 | 服务器部署、备份与恢复 | `deploy/README.md` |
 
 涉及默认配置或功能状态时核对实际代码与测试；文档存在冲突时先查明事实，不照抄旧说明。

@@ -14,10 +14,23 @@ export function routingConfig(env=process.env){
 }
 
 // 统计实际发往供应商的请求；与账号额度分开，失败和重启也不返还。
-export function createAnswerRouter({db,reserveRequest,enabled,primary,fallback,daily=1000,reserve=100,stream=streamAnswer,clock=Date.now}){
+export function createAnswerRouter({db,reserveRequest,costs,enabled,primary,fallback,daily=1000,reserve=100,stream=streamAnswer,clock=Date.now}){
   db.exec(`CREATE TABLE IF NOT EXISTS llm_provider_requests(id INTEGER PRIMARY KEY,user_id TEXT NOT NULL,provider TEXT NOT NULL,model TEXT NOT NULL,reason TEXT NOT NULL,created_ms INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'started',prompt_tokens INTEGER,completion_tokens INTEGER);
     CREATE INDEX IF NOT EXISTS llm_provider_requests_day ON llm_provider_requests(provider,created_ms);
     CREATE TABLE IF NOT EXISTS llm_route_state(provider TEXT PRIMARY KEY,cooldown_until INTEGER NOT NULL);`);
+  if(costs){
+    if(!db.prepare('PRAGMA table_info(llm_provider_requests)').all().some(column=>column.name==='cost_event_id'))db.exec('ALTER TABLE llm_provider_requests ADD COLUMN cost_event_id TEXT');
+    // 旧付费调用缺少接口来源，保留为未计价；历史免费路由可确认零 API 费用。
+    db.exec('BEGIN IMMEDIATE');
+    try{
+      for(const row of db.prepare('SELECT * FROM llm_provider_requests WHERE cost_event_id IS NULL').all()){
+        const route={name:row.provider,model:row.model,baseUrl:row.provider==='openrouter'?'https://openrouter.ai/api/v1':''};
+        const event=costs.beginQuestion(route,row.created_ms,{prompt_tokens:row.prompt_tokens,completion_tokens:row.completion_tokens});
+        db.prepare('UPDATE llm_provider_requests SET cost_event_id=? WHERE id=?').run(event,row.id);
+      }
+      db.exec('COMMIT');
+    }catch(error){db.exec('ROLLBACK');throw error;}
+  }
   const day=()=>new Date(clock()).setUTCHours(0,0,0,0);
   const used=()=>db.prepare("SELECT COUNT(*) n FROM llm_provider_requests WHERE provider='openrouter' AND created_ms>=?").get(day()).n;
   function selectAndRecord(userId,quick=false){
@@ -35,13 +48,18 @@ export function createAnswerRouter({db,reserveRequest,enabled,primary,fallback,d
       const id=record(userId,route,reason);db.exec('COMMIT');return {route,id};
     }catch(error){db.exec('ROLLBACK');throw error;}
   }
-  function record(userId,route,reason){return db.prepare('INSERT INTO llm_provider_requests(user_id,provider,model,reason,created_ms) VALUES(?,?,?,?,?)').run(userId,route.name,route.model,reason,clock()).lastInsertRowid;}
+  function record(userId,route,reason){
+    const timestamp=clock(),id=db.prepare('INSERT INTO llm_provider_requests(user_id,provider,model,reason,created_ms) VALUES(?,?,?,?,?)').run(userId,route.name,route.model,reason,timestamp).lastInsertRowid;
+    if(costs){const event=costs.beginQuestion(route,timestamp);db.prepare('UPDATE llm_provider_requests SET cost_event_id=? WHERE id=?').run(event,id);}
+    return id;
+  }
   async function attempt({route,id},permit,options){
     let visible=false;
     try{
       await stream({...route,...options,onText:text=>{if(text)visible=true;options.onText(text);},onUsage:usage=>{
         permit.onUsage(usage);
         if(Number.isSafeInteger(usage?.prompt_tokens)&&usage.prompt_tokens>=0&&Number.isSafeInteger(usage?.completion_tokens)&&usage.completion_tokens>=0)db.prepare('UPDATE llm_provider_requests SET prompt_tokens=?,completion_tokens=? WHERE id=?').run(usage.prompt_tokens,usage.completion_tokens,id);
+        if(costs)costs.updateQuestion(db.prepare('SELECT cost_event_id FROM llm_provider_requests WHERE id=?').get(id).cost_event_id,route,usage);
       }});
       db.prepare("UPDATE llm_provider_requests SET status='complete' WHERE id=?").run(id);
     }catch(error){db.prepare("UPDATE llm_provider_requests SET status='failed' WHERE id=?").run(id);error.hasVisibleText=visible;throw error;}

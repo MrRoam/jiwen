@@ -18,11 +18,9 @@
 .landing-hero h1 { font-size: clamp(36px, 5.6vw, 76px); font-weight: 560; line-height: 1.25; letter-spacing: -.035em; text-wrap: balance; margin: 0; }
 .landing-hero h1:focus:not(:focus-visible) { outline: none; }
 .landing-hero .landing-wordmark { position: relative; width: min(760px, 100%); margin: 0 auto; }
-/* 原图墨迹位于纵向 230–569 像素，布局收掉透明留白并保留笔锋。 */
-.landing-wordmark.is-wordmark-loaded { aspect-ratio: 1920 / 370; overflow: hidden; }
-.landing-wordmark-image { display: block; position: absolute; left: 0; top: 50%; transform: translateY(-48.78%); width: 100%; height: auto; }
-.landing-wordmark-image.is-loading { display: none; }
-.landing-wordmark-text.is-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* 标题字形内联，首屏直接显示最终样式，不等待图片或字体加载。 */
+.landing-wordmark-image { display: block; width: 100%; height: auto; }
+.landing-wordmark-text { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .landing-hero>p { margin: 22px 0 0; color: var(--public-muted); font-size: 17px; line-height: 1.8; }
 .landing-hero>.landing-tagline { margin-top: 18px; color: #65776b; font-family: Georgia, "Times New Roman", serif; font-size: 16px; font-weight: 400; line-height: 1.5; letter-spacing: .12em; }
 .landing-cta { min-height: 54px; padding: 15px 30px; margin-top: 28px; font-size: 16px; gap: 18px; }
