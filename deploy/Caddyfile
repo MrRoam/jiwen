@@ -1,5 +1,0 @@
-{$SITE_DOMAIN} {
-    reverse_proxy app:4317 {
-        flush_interval -1
-    }
-}

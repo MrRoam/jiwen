@@ -18,7 +18,7 @@ test('忘记密码：发码限频、错误验证码拒绝、重置后旧密码�
   const fetch=createAccountFetch(directory);
   const captured=[],smtp=fakeSmtp(captured);await new Promise(r=>smtp.listen(0,'127.0.0.1',r));
   const smtpPort=smtp.address().port,appPort=await port(),base=`http://127.0.0.1:${appPort}`;
-  const child=spawn(process.execPath,['server/index.js','--production'],{cwd:root,windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false',SMTP_HOST:'127.0.0.1',SMTP_PORT:String(smtpPort),SMTP_USER:'noreply@test.local',SMTP_PASS:'x'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
+  const child=spawn(process.execPath,['server/index.js','--production'],{cwd:root,windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false',SMTP_HOST:'127.0.0.1',SMTP_PORT:String(smtpPort),SMTP_USER:'noreply@test.local',SMTP_PASS:'x'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
   const request=async(route,{cookie,method='GET',body}={})=>fetch(base+route,{method,headers:{...(cookie?{Cookie:cookie}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
   try{
     let connected=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok){connected=true;break;}}catch{}await delay(50);}assert.ok(connected,logs);
@@ -56,7 +56,7 @@ test('未配置邮件服务时，找回密码返回 503', {timeout:30000},async(
   const scratch=path.resolve(root,'output/test-tmp');mkdirSync(scratch,{recursive:true});const directory=mkdtempSync(path.join(scratch,'nomail-'));
   const fetch=createAccountFetch(directory);
   const appPort=await port(),base=`http://127.0.0.1:${appPort}`;
-  const child=spawn(process.execPath,['server/index.js','--production'],{cwd:root,windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
+  const child=spawn(process.execPath,['server/index.js','--production'],{cwd:root,windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:directory,PORT:String(appPort),HOST:'127.0.0.1',SECURE_COOKIE:'false'},stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
   try{
     let connected=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok){connected=true;break;}}catch{}await delay(50);}assert.ok(connected,logs);
     assert.equal((await request503(base)).status,503);

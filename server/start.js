@@ -1,10 +1,11 @@
 import {fork} from 'node:child_process';
+import {runtimeMode} from './personal.js';
 import {fileURLToPath} from 'node:url';
 
 // 保持启动进程不变，管理员重启仅替换应用子进程，不触碰录音目录和公网隧道。
 let worker,stopping=false,restarting=false;
 function launch(){
-  worker=fork(fileURLToPath(new URL('./index.js',import.meta.url)),process.argv.slice(2),{env:{...process.env,JIWEN_SUPERVISED:'true'},stdio:['ignore','inherit','inherit','ipc'],windowsHide:true});
+  worker=fork(fileURLToPath(new URL('./index.js',import.meta.url)),process.argv.slice(2),{env:{...process.env,JIWEN_MODE:runtimeMode(),JIWEN_SUPERVISED:'true'},stdio:['ignore','inherit','inherit','ipc'],windowsHide:true});
   worker.on('message',message=>{if(message?.type==='restart')restarting=true;});
   worker.on('error',()=>{process.exitCode=1;});
   worker.on('exit',(code,signal)=>{

@@ -35,7 +35,7 @@ test('缺段自动补转写，重试不重复扣额、失败保留原文，旧�
   async function state(rid,cookie){return (await request(`/recordings/${rid}`,{cookie})).json();}
   async function waitState(rid,cookie,expected){for(let i=0;i<250;i++){const row=await state(rid,cookie);if(row.transcription_status===expected)return row;await delay(20);}assert.fail(`补转写没有进入 ${expected}`);}
   async function startApp(){
-    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',ADMIN_EMAIL:'',ASR_PROVIDER:'local',LOCAL_ASR_URL:`http://127.0.0.1:${mock.address().port}`,LLM_API_KEY:'',DASHSCOPE_API_KEY:'',OPENROUTER_API_KEY:'',JEV_ENABLED:'false',MONTHLY_AUDIO_SECONDS:'30',GLOBAL_DAILY_ASR_SECONDS:'30',MIN_FREE_DISK_BYTES:'1'},stdio:['ignore','pipe','pipe']});
+    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',ADMIN_EMAIL:'',ASR_PROVIDER:'local',LOCAL_ASR_URL:`http://127.0.0.1:${mock.address().port}`,LLM_API_KEY:'',DASHSCOPE_API_KEY:'',OPENROUTER_API_KEY:'',JEV_ENABLED:'false',MONTHLY_AUDIO_SECONDS:'30',GLOBAL_DAILY_ASR_SECONDS:'30',MIN_FREE_DISK_BYTES:'1'},stdio:['ignore','pipe','pipe']});
     child.stdout.on('data',value=>logs+=value);child.stderr.on('data',value=>logs+=value);
     let ready=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok){ready=true;break;}}catch{}await delay(30);}assert.ok(ready,logs);
   }

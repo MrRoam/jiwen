@@ -40,7 +40,7 @@ test('转写用尽逐包拦截，录音仍可保存，删除及重连不恢复�
     return events;
   }
   try{
-    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',MIN_FREE_DISK_BYTES:'1',ADMIN_EMAIL:'',ASR_PROVIDER:'remote',ASR_MODEL:'fun-asr-realtime',ASR_WS_URL:`ws://127.0.0.1:${mock.address().port}`,DASHSCOPE_API_KEY:'quota-test-only',LLM_API_KEY:'',OPENROUTER_API_KEY:'',LLM_ROUTING:'qwen-only',JEV_ENABLED:'false',MONTHLY_AUDIO_SECONDS:'2'},stdio:['ignore','pipe','pipe']});
+    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',MIN_FREE_DISK_BYTES:'1',ADMIN_EMAIL:'',ASR_PROVIDER:'remote',ASR_MODEL:'fun-asr-realtime',ASR_WS_URL:`ws://127.0.0.1:${mock.address().port}`,DASHSCOPE_API_KEY:'quota-test-only',LLM_API_KEY:'',OPENROUTER_API_KEY:'',LLM_ROUTING:'qwen-only',JEV_ENABLED:'false',MONTHLY_AUDIO_SECONDS:'2'},stdio:['ignore','pipe','pipe']});
     child.stdout.on('data',chunk=>logs+=chunk);child.stderr.on('data',chunk=>logs+=chunk);
     let ready=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok){ready=true;break;}}catch{}await delay(50);}assert.ok(ready,logs);
     assert.equal((await request('/usage')).status,401);

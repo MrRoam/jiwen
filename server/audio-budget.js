@@ -16,7 +16,7 @@ function dayWindow(timestamp){
 }
 
 // 使用独立用量表，删除课堂和重启都不能返还已发送的音频。
-export function audioBudget(db,{perUser=36000,globalDaily=360000,mode='monthly'}={}){
+export function audioBudget(db,{perUser=36000,globalDaily=360000,mode='monthly',unlimited=false}={}){
   audioQuotaMode(mode);
   if(mode==='trial')initAudioAllowance(db,mode);
   if(mode==='monthly'&&(!Number.isSafeInteger(perUser)||perUser<=0))throw new Error('转写额度必须是正整数。');
@@ -40,14 +40,14 @@ export function audioBudget(db,{perUser=36000,globalDaily=360000,mode='monthly'}
   ensureDay(Date.now());
   function globalUsage(timestamp=Date.now()){
     const day=ensureDay(timestamp),globalUsedSeconds=globalSum.get(day.key).seconds;
-    return {globalUsedSeconds,globalLimitSeconds:globalDaily,globalRemainingSeconds:Math.max(0,globalDaily-globalUsedSeconds),globalResetsAt:day.end};
+    return {globalUsedSeconds,globalLimitSeconds:unlimited?null:globalDaily,globalRemainingSeconds:unlimited?null:Math.max(0,globalDaily-globalUsedSeconds),globalResetsAt:unlimited?null:day.end};
   }
   function usage(userId,timestamp=Date.now()){
     const {start,end}=monthWindow(timestamp);
     const allowance=mode==='trial'?db.prepare('SELECT * FROM account_audio_allowance WHERE user_id=?').get(userId):null;
     if(mode==='trial'&&!allowance)throw new Error('暂时无法读取转写体验额度，请联系维护者。');
     const usedSeconds=allowance?allowance.used_seconds:sum.get(userId,start,end).seconds,limitSeconds=allowance?allowance.limit_seconds:perUser;
-    return {period:mode==='trial'?'lifetime':'monthly',usedSeconds,limitSeconds,remainingSeconds:Math.max(0,limitSeconds-usedSeconds),resetsAt:mode==='trial'?null:end,...globalUsage(timestamp)};
+    return {unlimited,period:unlimited?null:mode==='trial'?'lifetime':'monthly',usedSeconds,limitSeconds:unlimited?null:limitSeconds,remainingSeconds:unlimited?null:Math.max(0,limitSeconds-usedSeconds),resetsAt:unlimited||mode==='trial'?null:end,...globalUsage(timestamp)};
   }
   function open(userId,sessionId=randomUUID(),onCharged=()=>{}){
     let charged=0;
@@ -71,8 +71,8 @@ export function audioBudget(db,{perUser=36000,globalDaily=360000,mode='monthly'}
         db.exec('BEGIN IMMEDIATE');
         try{
           const current=usage(userId,timestamp);
-          if(delta>current.remainingSeconds){db.exec('ROLLBACK');return {accepted:false,code:mode==='trial'?'trial_exhausted':'quota_exhausted',error:mode==='trial'?trialExhausted:exhausted};}
-          if(delta>current.globalRemainingSeconds){db.exec('ROLLBACK');return {accepted:false,code:'global_quota_exhausted',error:globallyExhausted};}
+          if(!unlimited&&delta>current.remainingSeconds){db.exec('ROLLBACK');return {accepted:false,code:mode==='trial'?'trial_exhausted':'quota_exhausted',error:mode==='trial'?trialExhausted:exhausted};}
+          if(!unlimited&&delta>current.globalRemainingSeconds){db.exec('ROLLBACK');return {accepted:false,code:'global_quota_exhausted',error:globallyExhausted};}
           if(!forward(data)){db.exec('ROLLBACK');return {accepted:false};}
           record(delta,start,row);db.exec('COMMIT');row.bytes=nextBytes;row.charged+=delta;rows.set(start,row);charged+=delta;
           return {accepted:true,chargedSeconds:delta};

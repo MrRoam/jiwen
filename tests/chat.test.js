@@ -13,7 +13,7 @@ test('修改问题保留原对话和前文，停止保存部分回答且可继�
   const scratch=path.resolve('output/test-tmp');mkdirSync(scratch,{recursive:true});const dir=mkdtempSync(path.join(scratch,'chat-'));
   const fetch=createAccountFetch(dir);
 
-  const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,LLM_API_KEY:'test',LLM_BASE_URL:`http://127.0.0.1:${provider.address().port}`,SECURE_COOKIE:'false',DAILY_QUESTIONS:'20',GLOBAL_REQUESTS_PER_MINUTE:'50'},stdio:'ignore'});
+  const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,LLM_API_KEY:'test',LLM_BASE_URL:`http://127.0.0.1:${provider.address().port}`,SECURE_COOKIE:'false',DAILY_QUESTIONS:'20',GLOBAL_REQUESTS_PER_MINUTE:'50'},stdio:'ignore'});
   let cookie='';const request=(url,body)=>fetch(`http://127.0.0.1:${port}/api${url}`,{method:body?'POST':'GET',headers:{Cookie:cookie,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
   try{
     for(let i=0;i<100;i++){try{if((await request('/me')).ok)break;}catch{}await delay(50);}

@@ -87,7 +87,7 @@ async function startApp(t,env={}){
   const probe=createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));
   const port=probe.address().port;await new Promise(r=>probe.close(r));
   const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,
-    env:{...process.env,DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',
+    env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',
       SMTP_USER:'',SMTP_PASS:'',ADMIN_EMAIL:'',JEV_ENABLED:'false',ASR_QUOTA_MODE:'trial',...env},
     stdio:['ignore','pipe','pipe']});
   let logs='';child.stdout.on('data',b=>logs+=b);child.stderr.on('data',b=>logs+=b);

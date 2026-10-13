@@ -27,7 +27,7 @@ function treeBytes(directory){
 // 所有准入及预留在同一事件循环同步完成。
 export function createStorageBudget(db,{dataDir,accountBytes=500*MiB,globalBytes=100*GiB,minFreeBytes=20*GiB,maxRecordingSeconds=7200,statfs=statfsSync}={}){
   if(!dataDir)throw new Error('存储预算需要 dataDir。');
-  for(const [name,value] of Object.entries({accountBytes,globalBytes,maxRecordingSeconds}))if(!Number.isSafeInteger(value)||value<=0)throw new Error(`${name} 必须是正整数。`);
+  for(const [name,value] of Object.entries({accountBytes,globalBytes,maxRecordingSeconds}))if(!(value===null&&name!=='maxRecordingSeconds')&&(!Number.isSafeInteger(value)||value<=0))throw new Error(`${name} 必须是正整数。`);
   if(!Number.isSafeInteger(minFreeBytes)||minFreeBytes<0)throw new Error('minFreeBytes 必须是非负整数。');
   const reservations=new Map(),textReservations=new Map();
   const identifier=name=>`"${name.replaceAll('"','""')}"`;
@@ -73,7 +73,7 @@ export function createStorageBudget(db,{dataDir,accountBytes=500*MiB,globalBytes
     return bytes;
   }
   function available(state,userId,exclude){
-    return Math.max(0,Math.min(accountBytes-(state.users.get(userId)||0)-reserved(state,userId,exclude),globalBytes-state.total-reserved(state,undefined,exclude),state.free-minFreeBytes-reserved(state,undefined,exclude)));
+    return Math.max(0,Math.min(accountBytes===null?Infinity:accountBytes-(state.users.get(userId)||0)-reserved(state,userId,exclude),globalBytes===null?Infinity:globalBytes-state.total-reserved(state,undefined,exclude),state.free-minFreeBytes-reserved(state,undefined,exclude)));
   }
   function begin(recordingId,userId,maxSeconds=maxRecordingSeconds){
     const previous=reservations.get(recordingId);
@@ -126,7 +126,7 @@ export function createStorageBudget(db,{dataDir,accountBytes=500*MiB,globalBytes
   function preflightText(userId,bytes){
     if(!Number.isSafeInteger(bytes)||bytes<0)throw new Error('文本预留字节数无效。');
     const state=scan();
-    if(bytes>accountBytes-(state.users.get(userId)||0)-reserved(state,userId)||bytes*2>globalBytes-state.total-reserved(state)||bytes*2>state.free-minFreeBytes-reserved(state))throw new StorageLimitError('保存空间不足，请先导出或删除旧课堂。');
+    if((accountBytes!==null&&bytes>accountBytes-(state.users.get(userId)||0)-reserved(state,userId))||(globalBytes!==null&&bytes*2>globalBytes-state.total-reserved(state))||bytes*2>state.free-minFreeBytes-reserved(state))throw new StorageLimitError('保存空间不足，请先导出或删除旧课堂。');
     return {bytes};
   }
   function reserveText(userId,bytes){
@@ -144,7 +144,7 @@ export function createStorageBudget(db,{dataDir,accountBytes=500*MiB,globalBytes
     const target=Math.max(current,Math.min(old.target,desired));reservations.set(recordingId,{userId,target});
     return {reservedBytes:Math.max(0,target-current)};
   }
-  function usage(userId){const state=scan(),usedBytes=state.users.get(userId)||0,reservedBytes=reserved(state,userId);return {usedBytes,audioBytes:state.audio.get(userId)||0,textBytes:state.text.get(userId)||0,limitBytes:accountBytes,reservedBytes,remainingBytes:Math.max(0,accountBytes-usedBytes-reservedBytes),globalUsedBytes:state.total,globalLimitBytes:globalBytes,globalReservedBytes:reserved(state),diskFreeBytes:state.free,minFreeBytes,maxRecordingSeconds};}
+  function usage(userId){const state=scan(),usedBytes=state.users.get(userId)||0,reservedBytes=reserved(state,userId);return {usedBytes,audioBytes:state.audio.get(userId)||0,textBytes:state.text.get(userId)||0,limitBytes:accountBytes,reservedBytes,remainingBytes:accountBytes===null?null:Math.max(0,accountBytes-usedBytes-reservedBytes),globalUsedBytes:state.total,globalLimitBytes:globalBytes,globalReservedBytes:reserved(state),diskFreeBytes:state.free,minFreeBytes,maxRecordingSeconds};}
   function release(recordingId){reservations.delete(recordingId);}
   return {begin,onChunk,preflight,preflightText,reserveText,interrupt,finish:release,release,usage};
 }

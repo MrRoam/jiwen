@@ -57,7 +57,7 @@ test('仅体验模式首页和注册页说明一次性1小时，自部署不显�
     const props={config:{legal,asrQuotaMode:'trial'},brand:'即问',setNotice(){},onAuth(){}};
     const html=renderToStaticMarkup(React.createElement(Auth,props));
     assert.match(html,/本站仅供体验/);assert.match(html,/一次性赠送 1 小时转写/);assert.match(html,/用完不自动恢复/);
-    assert.match(html,/复制给 AI 的部署提示/);assert.match(html,/github.com\/MrRoam\/jiwen/);
+    assert.match(html,/在自己的电脑使用/);assert.match(html,/github.com\/MrRoam\/jiwen/);
     const monthly=renderToStaticMarkup(React.createElement(Auth,{...props,config:{legal,asrQuotaMode:'monthly'}}));
     assert.doesNotMatch(monthly,/一次性赠送 1 小时/);
   }

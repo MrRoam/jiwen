@@ -1,4 +1,5 @@
 import {createAnswerRouter,routingConfig} from './answer-router.js';
+import {runtimeMode,assertPersonalDirectory,assertHostedDirectory,personalOwner,personalRequestAllowed} from './personal.js';
 import {initAccounts,registerAccount,isAdmin,normalizeEmail,validEmail} from './accounts.js';
 import {createServiceConfig} from './service-config.js';
 import {initPasswordResets,issueResetCode,applyPasswordReset} from './password-reset.js';
@@ -41,8 +42,10 @@ import {createLocalConsole} from './local-console.js';
 import {createCosts} from './costs.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const quotaMode=audioQuotaMode(process.env.ASR_QUOTA_MODE||'monthly');
-const dataDir=path.resolve(process.env.DATA_DIR||path.join(root,'data'));
+const mode=runtimeMode(),personal=mode==='personal';
+const quotaMode=personal?'monthly':audioQuotaMode(process.env.ASR_QUOTA_MODE||'monthly');
+const dataDir=path.resolve(process.env.DATA_DIR||path.join(root,'data',...(personal?['personal']:[])));
+if(personal)assertPersonalDirectory(dataDir);else assertHostedDirectory(dataDir);
 const runtimeFile=path.join(dataDir,'runtime.json');
 mkdirSync(dataDir,{recursive:true});
 if(existsSync(runtimeFile)){
@@ -63,9 +66,10 @@ const importance=createImportanceService(db,jevOptions);
 const teacherQuestions=createTeacherQuestionService(db,jevOptions);
 if(!jevEnabled){importance.close();teacherQuestions.close();}
 initAccounts(db,{quotaMode});
+const owner=personal?personalOwner(db):null;
 initPasswordResets(db);
 initLegal(db);
-const storage=createStorageBudget(db,{dataDir,accountBytes:storageLimits.userBytes,globalBytes:storageLimits.globalBytes,minFreeBytes:storageLimits.minFreeBytes,maxRecordingSeconds:storageLimits.maxRecordingSeconds});
+const storage=createStorageBudget(db,{dataDir,accountBytes:personal?null:storageLimits.userBytes,globalBytes:personal?null:storageLimits.globalBytes,minFreeBytes:personal?0:storageLimits.minFreeBytes,maxRecordingSeconds:storageLimits.maxRecordingSeconds});
 const conversionQueue=createWorkQueue(Number(process.env.FFMPEG_CONCURRENCY||1));
 const deletionLog=path.resolve(process.env.DATA_DELETION_LOG||`${dataDir}.deletions.jsonl`);
 if(!existsSync(deletionLog)){mkdirSync(path.dirname(deletionLog),{recursive:true});writeFileSync(deletionLog,'',{flag:'wx'});}
@@ -74,14 +78,14 @@ const get=(sql,...args)=>db.prepare(sql).get(...args),all=(sql,...args)=>db.prep
 const serviceConfig=createServiceConfig(dataDir);
 let serviceEnv,asrKey,asrUrl,asrModel,localMode,localRecoveryEnabled,asrReady,localUrl,runtimeRouter;
 const audioLimit=Number(process.env.MONTHLY_AUDIO_SECONDS||36000),questionLimit=Number(process.env.DAILY_QUESTIONS||20);
-const secure=process.env.SECURE_COOKIE==='true';
-const adminEmail=normalizeEmail(process.env.ADMIN_EMAIL||'');
-const apiConfigEnabled=process.env.API_CONFIG_ENABLED!=='false';
+const secure=!personal&&process.env.SECURE_COOKIE==='true';
+const adminEmail=personal?'':normalizeEmail(process.env.ADMIN_EMAIL||'');
+const apiConfigEnabled=personal||process.env.API_CONFIG_ENABLED!=='false';
 if(adminEmail&&!validEmail(adminEmail))throw new Error('ADMIN_EMAIL 格式不正确。');
 const globalDaily=Number(process.env.GLOBAL_DAILY_QUESTIONS||800),perMinute=Number(process.env.GLOBAL_REQUESTS_PER_MINUTE||18);
 if(![questionLimit,globalDaily,perMinute].every(n=>Number.isSafeInteger(n)&&n>0))throw new Error('问答额度必须是正整数。');
-const reserveRequest=requestBudget(db,{perUser:questionLimit,daily:globalDaily,perMinute});
-const reserveAudio=audioBudget(db,{perUser:audioLimit,globalDaily:Number(process.env.GLOBAL_DAILY_ASR_SECONDS||360000),mode:quotaMode});
+const reserveRequest=requestBudget(db,{perUser:questionLimit,daily:globalDaily,perMinute,unlimited:personal});
+const reserveAudio=audioBudget(db,{perUser:audioLimit,globalDaily:Number(process.env.GLOBAL_DAILY_ASR_SECONDS||360000),mode:quotaMode,unlimited:personal});
 const asrStarts=createASRStartQueue({startsPerSecond:Number(process.env.ASR_STARTS_PER_SECOND||15)});
 function applyServiceConfig(){
   serviceEnv=serviceConfig.env();
@@ -100,7 +104,7 @@ const audioReaders=new Map();
 const presence=createPresence();
 let restarting=false;
 let recovery;
-function currentLegal(){return legalDocument(serviceEnv,mailConfigured(),jevEnabled);}
+function currentLegal(){return personal?null:legalDocument(serviceEnv,mailConfigured(),jevEnabled);}
 // adult 列仅兼容既有数据库；新记录不再收集年龄声明。
 function rememberConsent(userId,value){run('INSERT INTO legal_consents(user_id,version,accepted_at,adult) VALUES(?,?,?,0) ON CONFLICT(user_id,version) DO NOTHING',userId,value.version,now());}
 function lessonBusy(lid){return all('SELECT id FROM recordings WHERE lesson_id=?',lid).some(r=>active.has(r.id)||liveASR.has(r.id)||finalizing.has(r.id)||playbackFiles.has(r.id)||audioReaders.has(r.id)||recovery?.busy(r.id))||all('SELECT id FROM conversations WHERE lesson_id=?',lid).some(c=>chatBusy.has(c.id));}
@@ -114,7 +118,7 @@ function deleteLesson(row){
   run('DELETE FROM lessons WHERE id=?',row.id);for(const r of recs)storage.release(r.id);
   return recs.map(r=>r.id);
 }
-const lifecycle=createLifecycle(db,{days:storageLimits.retentionDays,isBusy:lessonBusy,deleteLesson});
+const lifecycle=createLifecycle(db,{days:personal?null:storageLimits.retentionDays,isBusy:lessonBusy,deleteLesson});
 const recoveryCharges=new Map();
 recovery=createTranscriptionRecovery({db,dataDir,getUrl:()=>localUrl,
   // 云端实时转写不占用本机模型；本地实时模式才需要全站优先。
@@ -147,6 +151,7 @@ recovery=createTranscriptionRecovery({db,dataDir,getUrl:()=>localUrl,
 });
 function markTranscriptionGap(rid){run("UPDATE recordings SET transcription_needed=1,transcription_status=CASE WHEN transcription_status IN ('queued','running') THEN transcription_status ELSE 'needed' END WHERE id=?",rid);}
 function recoveryBudgetError(row){
+  if(personal)return null;
   if(Math.ceil(row.duration_ms/1000)*1000<=row.transcription_charged_ms)return null;
   const userId=row.user_id||get('SELECT user_id FROM lessons WHERE id=?',row.lesson_id)?.user_id;
   const usage=reserveAudio.usage(userId);
@@ -174,12 +179,13 @@ function retryExpiredTranscriptionBudgets(){
   if(!localRecoveryEnabled||restarting)return;
   for(const row of all("SELECT recordings.id,lessons.user_id FROM recordings JOIN lessons ON lessons.id=recordings.lesson_id WHERE recordings.status='ready' AND transcription_status='blocked' AND transcription_retry_at<>'' AND transcription_retry_at<=? ORDER BY recordings.created_at LIMIT 128",now())){
     const usage=reserveAudio.usage(row.user_id);
-    if(usage.remainingSeconds<1||usage.globalRemainingSeconds<1)continue;
+    if(!personal&&(usage.remainingSeconds<1||usage.globalRemainingSeconds<1))continue;
     try{recovery.enqueue(row.id);}catch{break;}
   }
 }
 if(process.env.HOST && !['localhost','127.0.0.1','::1'].includes(process.env.HOST) && !secure)throw new Error('对外服务必须配置 HTTPS 安全 Cookie。');
 app.disable('x-powered-by');
+if(personal)app.use((req,res,next)=>personalRequestAllowed(req)?next():res.status(403).json({error:'个人资料只允许从本机页面访问。'}));
 app.use((req,res,next)=>{if(/^\/api\/admin(?:\/|$)|^\/(?:admin|console)(?:\/|$|\.html$)|^\/src\/(?:console-main|admin-console)\./.test(req.path))return res.sendStatus(404);next();});
 app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');res.setHeader('X-Frame-Options','DENY');if(req.path.startsWith('/api'))res.setHeader('Cache-Control','no-store');next();});
 app.use('/api',(req,res,next)=>{
@@ -190,11 +196,13 @@ app.use('/api',(req,res,next)=>{
   next();
 });
 app.use(express.json({limit:'100kb'}));
-function userFor(req){const token=(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('tingjian='))?.slice(9);return token?get('SELECT users.* FROM sessions JOIN users ON users.id=sessions.user_id WHERE token=? AND expires>? AND users.email IS NOT NULL',createHash('sha256').update(token).digest('hex'),Date.now()):null;}
-function session(res,userId){const token=randomBytes(32).toString('hex');run('INSERT INTO sessions VALUES(?,?,?)',createHash('sha256').update(token).digest('hex'),userId,Date.now()+30*86400000);res.cookie('tingjian',token,{httpOnly:true,sameSite:'strict',secure,maxAge:30*86400000,path:'/'});}
+const cookieName=personal?'jiwen_personal':'tingjian';
+function userFor(req){const token=(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(cookieName+'='))?.slice(cookieName.length+1);if(!token)return null;const user=get('SELECT users.* FROM sessions JOIN users ON users.id=sessions.user_id WHERE token=? AND expires>?',createHash('sha256').update(token).digest('hex'),Date.now());return user&&(personal?user.id===owner.id:user.email!==null)?user:null;}
+function session(res,userId){const token=randomBytes(32).toString('hex');run('INSERT INTO sessions VALUES(?,?,?)',createHash('sha256').update(token).digest('hex'),userId,Date.now()+30*86400000);res.cookie(cookieName,token,{httpOnly:true,sameSite:'strict',secure,maxAge:30*86400000,path:'/'});}
 function verifyPassword(password,stored){const [salt,key]=stored.split(':');return timingSafeEqual(scryptSync(password,salt,64),Buffer.from(key,'hex'));}
 const attempts=new Map();
 app.post('/api/auth/:action',async(req,res)=>{
+  if(personal)return res.sendStatus(404);
   const address=req.socket.remoteAddress;let entry=attempts.get(address);if(!entry||entry.until<Date.now())entry={count:0,until:Date.now()+600000};attempts.set(address,entry);
   if(++entry.count>40)return res.status(429).json({error:'尝试过于频繁，请稍后再试。'});
   if(req.params.action==='request-registration'){
@@ -257,14 +265,15 @@ app.post('/api/auth/:action',async(req,res)=>{
   if(!user||!verifyPassword(password,user.password))return res.status(401).json({error:'邮箱或密码不正确。'});
   session(res,user.id);res.json({id:user.id,email:user.email});
 });
-function publicConfig(){return {apiConfigEnabled,asrReady,jevEnabled,jevReady:importance.ready,llmReady:answerRouter.ready,asrProvider:localMode?'local':'remote',asrModel:localMode?serviceEnv.LOCAL_ASR_MODEL:asrModel,asrQuotaMode:quotaMode,trialAudioSeconds:quotaMode==='trial'?trialAudioSeconds:null,registrationOpen:true,registrationRequiresVerification:true,dailyQuestions:questionLimit,mailReady:mailConfigured(),legal:currentLegal()};}
-app.get('/api/legal',(req,res)=>res.json(currentLegal()));
-app.get('/api/me',(req,res)=>{const user=userFor(req);if(user)resumePendingTranscriptions(user.id);res.json({user:user?{id:user.id,email:user.email,isAdmin:isAdmin(db,user,adminEmail),legalVersion:get('SELECT version FROM legal_consents WHERE user_id=? AND version=?',user.id,currentLegal().version)?.version||null}:null,config:publicConfig()});});
+function publicConfig(){return {mode,apiConfigEnabled,asrReady,jevEnabled,jevReady:importance.ready,llmReady:answerRouter.ready,asrProvider:localMode?'local':'remote',asrModel:localMode?serviceEnv.LOCAL_ASR_MODEL:asrModel,asrQuotaMode:personal?null:quotaMode,trialAudioSeconds:quotaMode==='trial'?trialAudioSeconds:null,registrationOpen:!personal,registrationRequiresVerification:!personal,dailyQuestions:personal?null:questionLimit,mailReady:!personal&&mailConfigured(),legal:currentLegal()};}
+app.get('/api/legal',(req,res)=>personal?res.sendStatus(404):res.json(currentLegal()));
+app.get('/api/me',(req,res)=>{let user=userFor(req);if(personal&&!user){session(res,owner.id);user=owner;}if(user)resumePendingTranscriptions(user.id);res.json({user:user?{id:user.id,email:user.email,personal,isAdmin:personal||isAdmin(db,user,adminEmail),legalVersion:personal?null:get('SELECT version FROM legal_consents WHERE user_id=? AND version=?',user.id,currentLegal().version)?.version||null}:null,config:publicConfig()});});
 app.use('/api',(req,res,next)=>{req.user=userFor(req);if(!req.user)return res.status(401).json({error:'请先登录。'});next();});
-registerPaymentInterestRoutes(app,db);
+if(!personal)registerPaymentInterestRoutes(app,db);
+if(personal)app.use(['/api/logout','/api/account/consent','/api/account'],(req,res,next)=>req.path==='/export'?next():res.sendStatus(404));
 app.post('/api/logout',(req,res)=>{const token=(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('tingjian='))?.slice(9);if(token)run('DELETE FROM sessions WHERE token=?',createHash('sha256').update(token).digest('hex'));res.clearCookie('tingjian',{path:'/'});res.json({ok:true});});
 app.post('/api/account/consent',(req,res)=>{if(!validConsent(req.body?.legalConsent,currentLegal().version))return res.status(400).json({error:'请同意当前隐私政策和服务协议。'});rememberConsent(req.user.id,req.body.legalConsent);resumePendingTranscriptions(req.user.id);res.json({ok:true});});
-app.get('/api/account/export',(req,res)=>{res.setHeader('Content-Disposition','attachment; filename="jiwen-account.json"');res.json(exportAccount(db,req.user,currentLegal().version));});
+app.get('/api/account/export',(req,res)=>{res.setHeader('Content-Disposition','attachment; filename="jiwen-account.json"');res.json(exportAccount(db,req.user,personal?'personal-v1':currentLegal().version));});
 app.delete('/api/account',(req,res)=>{
   if(isAdmin(db,req.user,adminEmail))return res.status(409).json({error:'当前账号是实例管理员，请联系运营者完成管理员交接后再注销。'});
   if(req.body.confirmation!=='删除账号'||typeof req.body.password!=='string'||!verifyPassword(req.body.password,req.user.password))return res.status(400).json({error:'请填写正确密码，并输入“删除账号”。'});
@@ -287,7 +296,7 @@ app.use('/api',(req,res,next)=>{
   try{const permit=storage.reserveText(req.user.id,bytes);res.once('finish',()=>permit.release());res.once('close',()=>permit.release());next();}
   catch(error){res.status(error.status||500).json({error:error.message,code:error.code});}
 });
-function requireAdmin(req,res,next){if(!apiConfigEnabled)return res.status(403).json({error:'此实例的 API 配置由维护者管理。'});if(!isAdmin(db,req.user,adminEmail))return res.status(403).json({error:'只有实例管理员可以修改 API 配置。'});next();}
+function requireAdmin(req,res,next){if(!apiConfigEnabled)return res.status(403).json({error:'此实例的 API 配置由维护者管理。'});if(!personal&&!isAdmin(db,req.user,adminEmail))return res.status(403).json({error:'只有实例管理员可以修改 API 配置。'});next();}
 const adminConsole=createConsole({db,presence,
   state:()=>({active,liveASR,chatBusy,finalizing,playback:playbackFiles,readers:audioReaders,tests:serviceTests,background:jevEnabled?get("SELECT (SELECT COUNT(*) FROM importance_results WHERE status IN ('queued','processing'))+(SELECT COUNT(*) FROM teacher_question_results WHERE status IN ('queued','processing')) n").n:0}),
   audioUsage:()=>reserveAudio.globalUsage(),storageUsage:()=>storage.usage(''),questionLimit:globalDaily,
@@ -490,13 +499,14 @@ app.get('/api/usage',(req,res)=>{
   const asr=reserveAudio.usage(req.user.id);
   // 额度明细包含本机及后台补写时长，不能由它推算云供应商费用。
   const rate=localMode?0:null;
-  res.json({asrSeconds:asr.usedSeconds,estimatedAsrCost:rate===null?null:asr.usedSeconds*rate,asr,llm:reserveRequest.usage(req.user.id),storage:{...storage.usage(req.user.id),retentionDays:storageLimits.retentionDays}});
+  res.json({asrSeconds:asr.usedSeconds,estimatedAsrCost:rate===null?null:asr.usedSeconds*rate,asr,llm:reserveRequest.usage(req.user.id),storage:{...storage.usage(req.user.id),retentionDays:personal?null:storageLimits.retentionDays}});
 });
 
 const asrConcurrency=Number(process.env.MAX_ASR_CONCURRENCY||50);if(!Number.isSafeInteger(asrConcurrency)||asrConcurrency<1)throw new Error('转写并发上限必须是正整数。');
 const wss=new WebSocketServer({noServer:true,maxPayload:128*1024});
 const presenceWss=new WebSocketServer({noServer:true,maxPayload:1024});
 server.on('upgrade',(req,socket,head)=>{
+  if(personal&&!personalRequestAllowed(req)){socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');socket.destroy();return;}
   if(restarting){socket.destroy();return;}
   if(new URL(req.url,'http://localhost').pathname==='/api/presence'){
     const user=userFor(req),origin=req.headers.origin;
@@ -517,7 +527,7 @@ server.on('upgrade',(req,socket,head)=>{
     console.info(JSON.stringify({event:'asr-resumed',at:now(),recordingId:rid}));
   }
   wss.handleUpgrade(req,socket,head,client=>{
-    const usage=reserveAudio.usage(user.id);if(usage.remainingSeconds<=0||usage.globalRemainingSeconds<=0){client.send(JSON.stringify({type:'error',code:'quota_exhausted',error:usage.remainingSeconds<=0?reserveAudio.personalExhausted:'全站今日转写额度已用完，录音仍会继续保存。'}));client.close();return;}
+    const usage=reserveAudio.usage(user.id);if(!personal&&(usage.remainingSeconds<=0||usage.globalRemainingSeconds<=0)){client.send(JSON.stringify({type:'error',code:'quota_exhausted',error:usage.remainingSeconds<=0?reserveAudio.personalExhausted:'全站今日转写额度已用完，录音仍会继续保存。'}));client.close();return;}
     let base=Number(url.searchParams.get('offsetMs')||0);if(!Number.isFinite(base)||base<0||base>10860000){client.close();return;}
     const timeline=new AudioTimeline(base);let packetOffset,lastDiagnostic=0,lastSegmentDiagnostic=0,pendingSentenceId=null,sentenceCount=0;
     const uid=id(),audioPricing={local:localMode,model:asrModel,baseUrl:asrUrl},audioPermit=reserveAudio.open(user.id,uid,(seconds,{day})=>{run('UPDATE recordings SET transcription_charged_ms=transcription_charged_ms+? WHERE id=?',seconds*1000,rid);costs.recordAudio(uid,{seconds,day,...audioPricing});});let bytes=0,drainTimer,quotaExhausted=false,providerFinished=false,finishing=false;
@@ -559,7 +569,7 @@ retryExpiredTranscriptionBudgets();
 const presenceTimer=setInterval(()=>presence.sweep(),30000);presenceTimer.unref();
 const consoleTimer=setInterval(()=>adminConsole.sample(),15000);consoleTimer.unref();
 let localConsole;
-const consolePort=Number(process.env.CONSOLE_PORT??(process.env.JIWEN_SUPERVISED==='true'?4319:0));
+const consolePort=personal?0:Number(process.env.CONSOLE_PORT??(process.env.JIWEN_SUPERVISED==='true'?4319:0));
 if(!Number.isSafeInteger(consolePort)||consolePort<0||consolePort>65535)throw new Error('CONSOLE_PORT 必须为 0～65535 的整数。');
 if(consolePort){
   localConsole=await createLocalConsole({root,port:consolePort,

@@ -1,6 +1,6 @@
 import {setTimeout as delay} from 'node:timers/promises';
 // 删除课堂、重启服务都不会返还已发出的调用。
-export function requestBudget(db,{perUser=5,daily=40,perMinute=10}={}){
+export function requestBudget(db,{perUser=5,daily=40,perMinute=10,unlimited=false}={}){
  db.exec('CREATE TABLE IF NOT EXISTS llm_requests(id INTEGER PRIMARY KEY,user_id TEXT NOT NULL,created_ms INTEGER NOT NULL); CREATE INDEX IF NOT EXISTS llm_requests_time ON llm_requests(created_ms)');
  const columns=new Set(db.prepare('PRAGMA table_info(llm_requests)').all().map(c=>c.name));
  for(const name of ['prompt_tokens','completion_tokens','usage_received'])if(!columns.has(name))db.exec(`ALTER TABLE llm_requests ADD COLUMN ${name} INTEGER NOT NULL DEFAULT 0`);
@@ -9,9 +9,9 @@ export function requestBudget(db,{perUser=5,daily=40,perMinute=10}={}){
   const day=new Date(timestamp).setUTCHours(0,0,0,0);db.exec('BEGIN IMMEDIATE');
   try{
    let error=null;
-   if(count('SELECT COUNT(*) n FROM llm_requests WHERE created_ms>=?',day)>=daily)error='今日全站问答额度已用完，请在下一次北京时间 08:00 后再试。';
-   else if(count('SELECT COUNT(*) n FROM llm_requests WHERE user_id=? AND created_ms>=?',userId,day)>=perUser)error='你的今日问答额度已用完，请在下一次北京时间 08:00 后再试。';
-   else if(count('SELECT COUNT(*) n FROM llm_requests WHERE created_ms>?',timestamp-60000)>=perMinute)error='当前提问较多，请一分钟后再试。';
+   if(!unlimited&&count('SELECT COUNT(*) n FROM llm_requests WHERE created_ms>=?',day)>=daily)error='今日全站问答额度已用完，请在下一次北京时间 08:00 后再试。';
+   else if(!unlimited&&count('SELECT COUNT(*) n FROM llm_requests WHERE user_id=? AND created_ms>=?',userId,day)>=perUser)error='你的今日问答额度已用完，请在下一次北京时间 08:00 后再试。';
+   else if(!unlimited&&count('SELECT COUNT(*) n FROM llm_requests WHERE created_ms>?',timestamp-60000)>=perMinute)error='当前提问较多，请一分钟后再试。';
    if(!error)reserve.lastId=db.prepare('INSERT INTO llm_requests(user_id,created_ms) VALUES(?,?)').run(userId,timestamp).lastInsertRowid;
    db.exec('COMMIT');return error;
   }catch(error){db.exec('ROLLBACK');throw error;}
@@ -37,7 +37,7 @@ export function requestBudget(db,{perUser=5,daily=40,perMinute=10}={}){
  reserve.usage=(userId)=>{
   const day=new Date().setUTCHours(0,0,0,0);
   const row=db.prepare('SELECT COUNT(*) requests,COALESCE(SUM(prompt_tokens),0) promptTokens,COALESCE(SUM(completion_tokens),0) completionTokens,COALESCE(SUM(usage_received),0) measuredRequests FROM llm_requests WHERE user_id=? AND created_ms>=?').get(userId,day);
-  return {...row,limit:perUser,remaining:Math.max(0,perUser-row.requests),resetsAt:new Date(day+86400000).toISOString()};
+  return {...row,unlimited,limit:unlimited?null:perUser,remaining:unlimited?null:Math.max(0,perUser-row.requests),resetsAt:unlimited?null:new Date(day+86400000).toISOString()};
  };
  return reserve;
 }

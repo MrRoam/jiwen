@@ -22,7 +22,7 @@ test('页面 API 配置：无邀请注册、管理员权限、保存即生效、
   await new Promise(resolve=>mock.listen(0,'127.0.0.1',resolve));
   let child,logs='';
   async function start(apiConfigEnabled='true'){
-    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:dir,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',MIN_FREE_DISK_BYTES:'1',ADMIN_EMAIL:'',API_CONFIG_ENABLED:apiConfigEnabled,DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',ASR_PROVIDER:'remote',LLM_ROUTING:'qwen-only'},stdio:['ignore','pipe','pipe']});
+    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:dir,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',MIN_FREE_DISK_BYTES:'1',ADMIN_EMAIL:'',API_CONFIG_ENABLED:apiConfigEnabled,DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',ASR_PROVIDER:'remote',LLM_ROUTING:'qwen-only'},stdio:['ignore','pipe','pipe']});
     child.stdout.on('data',chunk=>logs+=chunk);child.stderr.on('data',chunk=>logs+=chunk);
     for(let i=0;i<100;i++){try{if((await fetch(base+'/api/me')).ok)return;}catch{}await delay(50);}assert.fail('启动失败 '+logs);
   }

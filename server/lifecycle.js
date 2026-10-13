@@ -3,8 +3,9 @@ const clock=value=>typeof value==='function'?value():value;
 const columns=(db,table)=>new Set(db.prepare(`PRAGMA table_info(${table})`).all().map(row=>row.name));
 
 export function initLifecycle(db,now=Date.now,days=30){
-  if(!Number.isSafeInteger(days)||days<=0)throw new Error('课堂保存天数必须是正整数。');
+  if(days!==null&&(!Number.isSafeInteger(days)||days<=0))throw new Error('课堂保存天数必须是正整数。');
   if(!columns(db,'lessons').has('expires_at'))db.exec('ALTER TABLE lessons ADD COLUMN expires_at TEXT');
+  if(days===null){db.exec('UPDATE lessons SET expires_at=NULL');return null;}
   const expiresAt=new Date(clock(now)+days*dayMs).toISOString();
   // 旧课从规则生效起获得完整窗口，不能因创建较早立即删除。
   db.prepare('UPDATE lessons SET expires_at=? WHERE expires_at IS NULL').run(expiresAt);
@@ -13,15 +14,15 @@ export function initLifecycle(db,now=Date.now,days=30){
 
 export function createLifecycle(db,{days=30,now=Date.now,isBusy=()=>false,deleteLesson}={}){
   initLifecycle(db,now,days);
-  const expiration=()=>new Date(clock(now)+days*dayMs).toISOString();
+  const expiration=()=>days===null?null:new Date(clock(now)+days*dayMs).toISOString();
   function created(lessonId){db.prepare('UPDATE lessons SET expires_at=? WHERE id=?').run(expiration(),lessonId);}
-  function touch(lessonId){db.prepare('UPDATE lessons SET expires_at=MAX(COALESCE(expires_at,?),?) WHERE id=?').run(expiration(),expiration(),lessonId);}
+  function touch(lessonId){if(days!==null)db.prepare('UPDATE lessons SET expires_at=MAX(COALESCE(expires_at,?),?) WHERE id=?').run(expiration(),expiration(),lessonId);}
   let running=false;
   async function run(){
     if(running)return {skipped:true};running=true;
     try{
       const timestamp=clock(now),iso=new Date(timestamp).toISOString(),deleted=[],skipped=[];
-      if(deleteLesson)for(const lesson of db.prepare('SELECT * FROM lessons WHERE expires_at<=?').all(iso)){
+      if(days!==null&&deleteLesson)for(const lesson of db.prepare('SELECT * FROM lessons WHERE expires_at<=?').all(iso)){
         if(isBusy(lesson.id)){skipped.push(lesson.id);continue;}
         await deleteLesson(lesson);deleted.push(lesson.id);
       }

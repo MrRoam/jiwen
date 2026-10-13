@@ -73,10 +73,10 @@ function ServiceForm({service,initial,onSaved,locked}){
 export function ApiConfigDialog({Modal,me,locked,onSaved,onClose}){
   const [settings,setSettings]=useState(null),[error,setError]=useState('');
   useEffect(()=>{if(!me.isAdmin)return;let active=true;api('/services/config').then(value=>{if(active)setSettings(value);}).catch(error=>{if(active)setError(error.message);});return()=>{active=false;};},[me.isAdmin]);
-  return <Modal title={t('API 配置')} className="settings-modal api-modal" onClose={onClose}>
+  return <Modal title={t(me.personal?'转写与问答':'API 配置')} className="settings-modal api-modal" onClose={onClose}>
     <div className="settings-page">
       {!me.isAdmin?<p className="settings-help">{t('转写和问答由实例管理员配置，请联系管理员。')}</p>:<>
-        <p className="settings-help">{t('密钥仅保存在本实例服务器，不会回显或提交到仓库。保存立即生效，测试成功才表示接口可用。')}</p>
+        <p className="settings-help">{t(me.personal?'密钥保存在这台电脑上。保存后分别测试转写和问答。':'密钥仅保存在本实例服务器，不会回显或提交到仓库。保存立即生效，测试成功才表示接口可用。')}</p>
         {locked&&<p className="settings-inline-error" role="status">{t('请结束录音、保存和回答后再修改配置。')}</p>}
         {error&&<p className="settings-inline-error" role="alert">{translateMessage(error)}</p>}
         {!settings&&!error&&<p role="status" className="settings-help">{t('读取中…')}</p>}

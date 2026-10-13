@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, {before} from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter,once} from 'node:events';
 import {createServer,request as httpRequest} from 'node:http';
@@ -17,13 +17,14 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function port(){const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const value=server.address().port;await new Promise(resolve=>server.close(resolve));return value;}
 async function rawStatus(url,{headers,method='GET'}={}){return new Promise((resolve,reject)=>{const req=httpRequest(url,{headers,method},res=>{res.resume();resolve(res.statusCode);});req.on('error',reject);req.end();});}
 const execute=promisify(execFile);
+before(async()=>{await execute(process.execPath,[path.join(root,'node_modules/vite/bin/vite.js'),'build','--config','vite.console.config.js'],{cwd:root,windowsHide:true});});
 
 test('打开入口识别控制台，拒绝错误端口和旧实例，失败只显示中文说明',async()=>{
   let body={console:true,user:null};
   const server=createServer((req,res)=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify(body));});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const servicePort=String(server.address().port),entry=path.join(root,'scripts/open-console.js');
-  const run=consolePort=>execute(process.execPath,[entry,'--check'],{cwd:root,windowsHide:true,env:{...process.env,CONSOLE_PORT:consolePort,PORT:servicePort}});
+  const run=consolePort=>execute(process.execPath,[entry,'--check'],{cwd:root,windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',CONSOLE_PORT:consolePort,PORT:servicePort}});
   try{
     assert.match((await run(servicePort)).stdout,/本机控制台：http/);
     body={user:null,config:{}};
@@ -49,7 +50,7 @@ test('本机独立控制台：免登录、公网隔离、实时统计和无损�
   const legalFetch=createAccountFetch(directory);
   const base=`http://127.0.0.1:${await port()}`;
   const local=`http://127.0.0.1:${await port()}`;
-  const child=fork(path.join(root,'server/start.js'),['--production'],{cwd:root,execArgv:[],windowsHide:true,stdio:['ignore','pipe','pipe','ipc'],env:{...process.env,DATA_DIR:directory,PORT:new URL(base).port,CONSOLE_PORT:new URL(local).port,HOST:'127.0.0.1',SECURE_COOKIE:'true',API_CONFIG_ENABLED:'false',ADMIN_EMAIL:'owner@example.test',DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',ASR_PROVIDER:'remote',JEV_ENABLED:'false',GLOBAL_DAILY_QUESTIONS:'40',GLOBAL_DAILY_ASR_SECONDS:'600',MIN_DISK_FREE_BYTES:'0'}});
+  const child=fork(path.join(root,'server/start.js'),['--production'],{cwd:root,execArgv:[],windowsHide:true,stdio:['ignore','pipe','pipe','ipc'],env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:directory,PORT:new URL(base).port,CONSOLE_PORT:new URL(local).port,HOST:'127.0.0.1',SECURE_COOKIE:'true',API_CONFIG_ENABLED:'false',ADMIN_EMAIL:'owner@example.test',DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',ASR_PROVIDER:'remote',JEV_ENABLED:'false',GLOBAL_DAILY_QUESTIONS:'40',GLOBAL_DAILY_ASR_SECONDS:'600',MIN_DISK_FREE_BYTES:'0'}});
   let logs='';child.stdout.on('data',value=>logs+=value);child.stderr.on('data',value=>logs+=value);
   const sockets=[];let db;
   const request=(route,{cookie,method='GET',body,headers={}}={})=>legalFetch(`${base}/api${route}`,{method,headers:{...(cookie?{Cookie:cookie}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},body:body?JSON.stringify(body):undefined});

@@ -39,7 +39,7 @@ test('HELP 一次请求流式短答、账号隔离、冻结追问、并行普通
  const scratch=path.resolve('output/test-tmp');mkdirSync(scratch,{recursive:true});const dir=mkdtempSync(path.join(scratch,'help-'));
   const fetch=createAccountFetch(dir);
  const accounts=[{email:'help-a@example.test'},{email:'help-b@example.test'}];
- const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,
+ const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,
   LLM_API_KEY:'help-test',LLM_BASE_URL:`http://127.0.0.1:${provider.address().port}`,LLM_ROUTING:'qwen-only',JEV_ENABLED:'false',
   SECURE_COOKIE:'false',DAILY_QUESTIONS:'7',GLOBAL_DAILY_QUESTIONS:'30',GLOBAL_REQUESTS_PER_MINUTE:'50'},stdio:'ignore'});
  let cookieA,cookieB,db;

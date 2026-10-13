@@ -68,7 +68,7 @@ test('云端实时模式保留本机缺段补写，旧政策版本不阻断补�
     return recording;
   }
   try{
-    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,
+    child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',
       DATA_DIR:directory,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',ADMIN_EMAIL:'',
       ASR_PROVIDER:'remote',ASR_MODEL:'fun-asr-realtime',ASR_WS_URL:'wss://dashscope.aliyuncs.com/api-ws/v1/inference',
       LOCAL_ASR_RECOVERY:'true',LOCAL_ASR_URL:`http://127.0.0.1:${mock.address().port}`,

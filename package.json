@@ -8,8 +8,7 @@
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env server/start.js",
-    "build": "vite build && vite build --config vite.console.config.js",
-    "console": "node --env-file-if-exists=.env scripts/open-console.js",
+    "build": "vite build",
     "start": "node --env-file-if-exists=.env server/start.js --production",
     "test": "node --test tests/*.test.js",
     "check:openrouter": "node --env-file-if-exists=.env server/check-openrouter.js",

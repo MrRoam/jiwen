@@ -37,7 +37,7 @@ test('邮箱验证注册和录音无需额外确认、容量可见、缺段不�
   const fetch=createAccountFetch(dir);
   const probe=createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
   const base=`http://127.0.0.1:${port}`;
-  const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:dir,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',ADMIN_EMAIL:'',DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',SMTP_USER:'',SMTP_PASS:'',JEV_ENABLED:'false',ASR_PROVIDER:'remote',LLM_ROUTING:'qwen-only'},stdio:['ignore','pipe','pipe']});
+  const child=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:dir,PORT:String(port),HOST:'127.0.0.1',SECURE_COOKIE:'false',ADMIN_EMAIL:'',DASHSCOPE_API_KEY:'',LLM_API_KEY:'',OPENROUTER_API_KEY:'',SMTP_USER:'',SMTP_PASS:'',JEV_ENABLED:'false',ASR_PROVIDER:'remote',LLM_ROUTING:'qwen-only'},stdio:['ignore','pipe','pipe']});
   let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
   t.after(async()=>{child.kill();if(child.exitCode===null)await once(child,'exit');rmSync(dir,{recursive:true,force:true});rmSync(`${dir}.deletions.jsonl`,{force:true});});
   for(let i=0;i<150;i++){try{if((await fetch(base+'/api/me')).ok)break;}catch{}await new Promise(r=>setTimeout(r,30));}
@@ -68,7 +68,7 @@ test('邮箱验证注册和录音无需额外确认、容量可见、缺段不�
   assert.equal(recordingResponse.status,200,'旧政策版本可以直接录音，无需许可确认字段');
   const rec=await recordingResponse.json();assert.ok(rec.id);assert.ok(rec.maxSeconds<=7200);
   assert.equal((await(await request('/me',{cookie:a.cookie})).json()).user.legalVersion,null,'开始录音不会伪造新版政策同意');
-  const competing=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,DATA_DIR:dir,PORT:'0',HOST:'127.0.0.1'},stdio:'ignore'});
+  const competing=spawn(process.execPath,['server/index.js','--production'],{windowsHide:true,env:{...process.env,JIWEN_MODE:'hosted',DATA_DIR:dir,PORT:'0',HOST:'127.0.0.1'},stdio:'ignore'});
   assert.notEqual((await once(competing,'exit'))[0],0,'第二实例必须在打开数据库前拒绝');
   assert.equal(JSON.parse(readFileSync(path.join(dir,'runtime.json'),'utf8')).pid,child.pid,'第二实例不能删除第一个运行标记');
   assert.equal((await(await request(`/recordings/${rec.id}`,{cookie:a.cookie})).json()).status,'recording');

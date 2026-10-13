@@ -13,43 +13,37 @@
 
 ## 项目与命令
 
-项目为“即问”课堂录音、转写和 AI 问答应用。前端位于 `src/`，使用 React + Vite；后端位于 `server/`，使用 Express + WebSocket + SQLite。使用 Node.js 24 或更新版本及 npm，依赖锁文件为 `package-lock.json`。
+项目为“即问”个人课堂录音、转写和 AI 问答应用，使用 React + Vite、Express + WebSocket + SQLite。需要 Node.js 24 或更新版本及 npm。
+
+默认直接进入个人课堂，不要求邮箱、注册或邮件服务。个人资料位于 data/personal/，不设站点额度，不按期限自动删除。
 
 | 任务 | 命令 |
 | --- | --- |
-| 安装依赖 | `npm install` |
-| 启动开发服务 | `npm run dev` |
-| 定向测试（上下文示例） | `node --test tests/context.test.js` |
-| 全部 JavaScript 测试 | `npm test` |
-| 前端构建 | `npm run build` |
-| 启动生产服务（先构建） | `npm start` |
-| 重启本机内测（自动构建、替换旧服务并验证公网） | `powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File deploy/start-trial.ps1 -NoBrowser` |
-| 停止本机内测 | `powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File deploy/stop-trial.ps1` |
+| 安装依赖 | npm ci |
+| 开发启动 | npm run dev |
+| 构建前端 | npm run build |
+| 运行构建后的应用 | npm start |
+| JavaScript 测试 | npm test |
+| 发布文件检查 | npm run check:release |
 
-`tests/` 使用 Node 内置测试运行器；按改动选择对应的 `*.test.js`。`npm test` 不包含 `tests/trial-startup.test.ps1`，改动内测启动脚本时需单独检查该测试。项目没有配置 lint 或 typecheck 脚本，不虚构验证命令。
+没有 lint 或 typecheck 脚本，不虚构验证命令。
 
-## 数据与行为边界
+## 改动边界
 
-- API 配置仅实例管理员可修改，保存到 `data/service-config.json`，保存立即生效，使用中的任务结束后才能修改。API 密钥仅保留在服务器端；不得写入前端、日志、聊天或 Git。不得把 `.env`、`data/` 中的账号数据库及课堂录音提交到仓库或公开构建上下文。
-- 本地持久数据位于 `data/`；不要同时启动使用同一端口和数据库的服务。部署更新和重启会中断录音、转写与回答，操作前考虑正在使用的会话。
-- Docker 持久卷保存数据库和录音，不执行会删除数据卷的 `docker compose down -v`。
-- 课堂、录音与对话按账号隔离；修改访问路径时保留服务端权限检查。
-- 每个对话冻结自己的课堂上下文；追问沿用快照，不混入其他对话或后续转写。相关逻辑见 `server/context.js`。
-- 录音保存和转写独立；转写失败不能阻断录音保存。修改分段上传时保留顺序、去重及断网恢复能力。
-- 验证优先使用临时数据库、模拟服务和合成音频；“已配置”不等于服务验证成功，本地测试通过也不等于真实麦克风、手机后台录音或公网部署验证完成。
+- 个人使用只允许本机访问。修改访问逻辑时保留本机会话、Host 与 Origin 检查，以及课堂、录音和对话的归属检查。
+- 核心代码还支持 hosted 运行方式；涉及认证与额度时保留该方式的邮箱验证、账号隔离和管理员权限。相关测试显式设置运行方式，不通过删除权限检查来实现个人免注册。
+- 个人资料和其他运行方式使用独立目录，不能自动接管旧账号数据库。
+- 密钥只在本机后端保存，不写入前端、日志、聊天或 Git。不要提交 .env、data/、录音、数据库或备份。
+- 录音保存与转写独立。保留分段顺序、去重及断网恢复。
+- 对话冻结自己的课堂上下文，追问沿用快照，见 server/context.js。
+- 磁盘不足时保留已有资料与待恢复录音。删除资料需要明确的用户操作。
+- 验证使用临时数据目录、模拟服务和合成音频，不使用真实密钥或原账号资料。
+- 公开使用文档只指导个人电脑使用，不引入站点邮件、管理员、服务器或运营额度设置。
 
-## 按需查阅
+## 使用文档
 
-| 内容 | 文件 |
-| --- | --- |
-| 本机启动、功能及录音限制 | `README.md` |
-| 环境变量模板 | `.env.example` |
-| 课堂上下文与时间轴 | `docs/课堂上下文与时间轴.md` |
-| API 配置入口与兼容要求 | `docs/API配置.md` |
-| 账号与使用额度 | `docs/账号与额度.md` |
-| 问答路由 | `docs/OpenRouter优先路由.md` |
-| Jev 重点标记 | `docs/Jev重点标记.md` |
-| 本机内测试用 | `deploy/内测试用.md` |
-| 服务器部署、备份与恢复 | `deploy/README.md` |
-
-涉及默认配置或功能状态时核对实际代码与测试；文档存在冲突时先查明事实，不照抄旧说明。
+- README.md：产品用途、安装和使用。
+- docs/自行部署与AI协助.md：本机使用与 AI 协助。
+- docs/API配置.md：自己的转写和问答服务。
+- docs/本地转写.md：可选本机模型。
+- docs/课堂上下文与时间轴.md：对话与课堂内容的关系。
