@@ -1,6 +1,6 @@
 # OpenRouter 可选路由
 
-默认直接使用页面中填写的问答接口，推荐 Qwen。登录管理员账号，进入侧栏“API 配置 → 问答服务 → OpenRouter 路由（可选）”，选择“优先 OpenRouter 免费模型”，填写自己的 OpenRouter API Key，保存并测试。
+默认直接使用页面中填写的问答接口。登录管理员账号，点击侧栏底部账号，进入「API 配置 → 问答服务 → OpenRouter 路由（可选）」，选择「优先 OpenRouter 免费模型」，填写自己的 OpenRouter API Key，保存并测试。
 
 当前优先模型由 `server/answer-router.js` 的 `NEMOTRON_FREE` 定义，使用免费版本；模型可用性以 OpenRouter 为准。优先和备用服务使用独立密钥。HELP 优先直接使用页面上方的问答接口。
 
