@@ -91,6 +91,15 @@
 .account-panel.modal{border:0;border-radius:14px;box-shadow:var(--shadow-raised);padding:0;max-width:calc(100vw - 24px)}
 .account-panel .modal-heading{padding:14px 20px;background:#f8faf6}
 .account-panel .modal-heading h2{font-size:17px;color:#25392d;font-weight:600}
+.account-panel .modal-heading{position:sticky;top:0;z-index:1}
+.personal-settings .account-menu-actions{border-top:0;padding-top:8px}
+.personal-settings .personal-data{padding-top:2px}
+.account-panel .api-service-heading{gap:8px}
+.account-panel .api-service-heading h3{font-size:14px}
+.account-panel .api-actions{gap:8px}
+.account-panel .api-clear{margin-left:0}
+.account-panel .api-field .form-input{min-width:0;box-sizing:border-box}
+.account-panel .api-checkbox input{width:auto}
 .account-panel .modal-body{padding:0 20px 20px}
 .account-panel .settings-account-identity{padding:20px 0}
 .account-panel .settings-account-identity .avatar{width:36px;height:36px;font-size:14px}
@@ -117,3 +126,35 @@
   .account-panel .settings-password .form-input{font-size:16px}
   .account-panel .settings-action{min-height:44px}
 }
+/* 账号面板只保留常用信息，设置在同一处展开。 */
+.account-panel .settings-account-identity{gap:10px;padding:16px 0}
+.account-panel .settings-account-identity>div{flex:1}
+.account-password-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;border:0;border-radius:8px;background:transparent;color:#50614c;padding:0}
+.account-password-icon:hover,.account-password-icon[aria-expanded=true]{background:var(--soft)}
+.account-panel .settings-usage{padding-bottom:10px}
+.settings-usage-row+.settings-usage-row{margin-top:14px}
+.settings-usage-label{align-items:center;gap:4px}
+.settings-usage .deployment-guide{margin-top:12px;font-size:12px}
+.usage-help{display:inline-flex}
+.usage-help-trigger{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:#50614c}
+.usage-help-trigger:hover,.usage-help-trigger[aria-expanded=true]{background:var(--soft)}
+.usage-help-tooltip{position:fixed;box-sizing:border-box;z-index:80;padding:10px 12px;border-radius:8px;background:#304435;color:#fff;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.account-settings-disclosure>summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:10px 8px;list-style:none;border-radius:8px;cursor:pointer}
+.account-settings-disclosure>summary::-webkit-details-marker{display:none}
+.account-settings-disclosure>summary:hover{background:var(--soft)}
+.account-settings-disclosure[open]>summary>svg{transform:rotate(90deg)}
+.account-settings-disclosure>.settings-page{padding:0 8px 12px}
+.account-settings-disclosure .settings-section{padding-top:16px}
+.account-settings-disclosure .settings-section+.settings-section{margin-top:16px}
+.account-settings-disclosure .settings-section-heading{margin-bottom:10px}
+.account-settings-disclosure .settings-device-label{display:none}
+.account-settings-disclosure .settings-device-controls{gap:8px}
+.account-settings-disclosure .settings-refresh{font-size:0;width:36px;justify-content:center}
+.account-management{margin:0 8px 12px;font-size:13px}
+.account-management>summary{cursor:pointer;padding:10px 0;color:#50614c}
+.account-management .account-data{padding-top:8px}
+.account-panel .settings-logout{padding-top:10px}
+.account-panel .settings-logout>button{border:0;background:transparent;justify-content:flex-start;padding:8px;font-size:13px}
+.account-panel #account-password-form{padding-bottom:16px}
+.account-password-icon:focus-visible,.usage-help-trigger:focus-visible,.account-panel summary:focus-visible{outline:2px solid #315d41;outline-offset:2px}
+@media(max-width:700px){.account-password-icon{width:44px;height:44px}.usage-help-trigger{width:32px;height:32px}.account-settings-disclosure .settings-device-select{font-size:16px}}

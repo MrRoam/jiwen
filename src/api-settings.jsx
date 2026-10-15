@@ -3,6 +3,7 @@ import {Check,LoaderCircle,Mic,MessageCircle} from 'lucide-react';
 import {api} from './api';
 import {t,translateMessage} from './i18n.js';
 import './settings.css';
+import {SettingsPanel} from './settings-panel.jsx';
 
 function ServiceForm({service,initial,onSaved,locked}){
   const asr=service==='asr',Icon=asr?Mic:MessageCircle;
@@ -70,11 +71,10 @@ function ServiceForm({service,initial,onSaved,locked}){
   </section>;
 }
 
-export function ApiConfigDialog({Modal,me,locked,onSaved,onClose}){
+export function ApiConfigContent({me,locked,onSaved}){
   const [settings,setSettings]=useState(null),[error,setError]=useState('');
   useEffect(()=>{if(!me.isAdmin)return;let active=true;api('/services/config').then(value=>{if(active)setSettings(value);}).catch(error=>{if(active)setError(error.message);});return()=>{active=false;};},[me.isAdmin]);
-  return <Modal title={t(me.personal?'转写与问答':'API 配置')} className="settings-modal api-modal" onClose={onClose}>
-    <div className="settings-page">
+  return <div className="settings-page">
       {!me.isAdmin?<p className="settings-help">{t('转写和问答由实例管理员配置，请联系管理员。')}</p>:<>
         <p className="settings-help">{t(me.personal?'密钥保存在这台电脑上。保存后分别测试转写和问答。':'密钥仅保存在本实例服务器，不会回显或提交到仓库。保存立即生效，测试成功才表示接口可用。')}</p>
         {locked&&<p className="settings-inline-error" role="status">{t('请结束录音、保存和回答后再修改配置。')}</p>}
@@ -82,6 +82,9 @@ export function ApiConfigDialog({Modal,me,locked,onSaved,onClose}){
         {!settings&&!error&&<p role="status" className="settings-help">{t('读取中…')}</p>}
         {settings&&['asr','llm'].map(service=><ServiceForm key={service} service={service} initial={settings} locked={locked} onSaved={next=>{setSettings(next.settings);onSaved(next.config);}}/>)}
       </>}
-    </div>
-  </Modal>;
+    </div>;
+}
+
+export function ApiConfigDialog({Modal,me,locked,onSaved,onClose}){
+  return <SettingsPanel Modal={Modal} title={t(me.personal?'转写与问答':'API 配置')} onClose={onClose} className="api-panel"><ApiConfigContent me={me} locked={locked} onSaved={onSaved}/></SettingsPanel>;
 }

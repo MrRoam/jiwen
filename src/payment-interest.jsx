@@ -21,7 +21,7 @@ function LittleBell(){
 }
 
 // 连敲只重播反馈；期待人数由服务器按账号去重。
-export function PaymentInterest(){
+export function PaymentInterest({contact}){
   const [interest,setInterest]=useState(null),[error,setError]=useState(''),[bursts,setBursts]=useState([]),[knock,setKnock]=useState(0);
   const mounted=useRef(false),pending=useRef(false),version=useRef(0),serial=useRef(0),timers=useRef(new Set());
   useEffect(()=>{
@@ -38,20 +38,24 @@ export function PaymentInterest(){
     pending.current=true;version.current++;setError('');
     api('/payment-interest',{method:'POST'}).then(value=>{if(mounted.current)setInterest(value);}).catch(()=>{if(mounted.current)setError('没有记下，请再敲一次');}).finally(()=>{pending.current=false;});
   }
-  return <section className="payment-interest" aria-labelledby="payment-interest-title">
+  return <details className="payment-interest-disclosure">
+    <summary>{t('额度不够，想付费增加？')}</summary>
+    <section className="payment-interest" aria-label={t('增加额度的需求')}>
     <div className="payment-interest-copy">
-      <h3 id="payment-interest-title">{t('想要付费选项？')}</h3>
-      <p>{t('敲敲小铃，让我知道。')}</p>
+      <p>{t('不会或不想自行部署，希望继续用本站，并付费增加额度？')}</p>
+      <p>{t('目前正在统计需求。敲一下小铃，让作者知道。')}</p>
+      {contact&&<a className="payment-interest-contact" href={`mailto:${contact}`}>{t('联系作者')} · {contact}</a>}
       <div className="payment-interest-count" role="status" aria-live="polite" aria-atomic="true">
-        {error?<span className="payment-interest-error">{t(error)}</span>:interest?<span key={interest.count}>{t('{count} 人期待',{count:new Intl.NumberFormat(getLocale()).format(interest.count)})}{interest.interested&&<span className="payment-interest-you"> · {t('包括你')}</span>}</span>:<span>{t('尚未开放')}</span>}
+        {error?<span className="payment-interest-error">{t(error)}</span>:interest?<span key={interest.count}>{t('{count} 人有此需求',{count:new Intl.NumberFormat(getLocale()).format(interest.count)})}{interest.interested&&<span className="payment-interest-you"> · {t('包括你')}</span>}</span>:null}
       </div>
     </div>
-    <button type="button" className="payment-interest-ring" onClick={ring} aria-label={interest?.interested?t('已记下你的期待，再敲一下小铃'):t('敲一下小铃，表达对付费选项的期待')}>
+    <button type="button" className="payment-interest-ring" onClick={ring} aria-label={interest?.interested?t('已记下你的期待，再敲一下小铃'):t('敲一下小铃，登记付费增加额度的需求')}>
       <span className="payment-interest-stage">
         <span key={knock} className={`payment-interest-bell${knock?' is-ringing':''}`}><LittleBell/></span>
         <span className="payment-interest-bursts" aria-hidden="true">{bursts.map(burst=><span key={burst.id} className="payment-interest-burst" style={{'--burst-tilt':burst.tilt}}><b>{t(burst.text)}</b><i className="payment-spark payment-spark-one">✦</i><i className="payment-spark payment-spark-two">✧</i><i className="payment-spark payment-spark-three">✦</i></span>)}</span>
       </span>
       <span className="payment-interest-hint">{interest?.interested?t('再敲一下'):t('敲一下')}</span>
     </button>
-  </section>;
+    </section>
+  </details>;
 }

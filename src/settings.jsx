@@ -1,15 +1,41 @@
 import {t,translateMessage} from './i18n.js';
 import {LanguageSelect} from './locale.jsx';
-import React,{useState,useEffect,useLayoutEffect,useRef} from 'react';
-import {Mic,MessageCircle,ScanLine,ChevronRight,KeyRound,LogOut,LoaderCircle,RotateCcw,Check,ArrowLeft,Settings,FileText,Download} from 'lucide-react';
+import React,{useState,useEffect,useLayoutEffect,useRef,useId} from 'react';
+import {createPortal} from 'react-dom';
+import {Mic,MessageCircle,ScanLine,ChevronRight,KeyRound,LogOut,LoaderCircle,RotateCcw,Check,ArrowLeft,Settings,Download,CircleHelp} from 'lucide-react';
 import {api} from './api';
 import {usagePercentage,usageRemainingText,usageResetText,audioRemainingText} from './usage.js';
 import {DeploymentGuide} from './deployment.jsx';
 import {PaymentInterest} from './payment-interest.jsx';
 import './settings.css';
 import {LegalDocument,LegalLinks,LegalStatus,useLegal} from './legal.jsx';
+import {SettingsPanel} from './settings-panel.jsx';
 
 const services=[{id:'asr',name:'实时转写',Icon:Mic},{id:'llm',name:'AI 问答',Icon:MessageCircle},{id:'jev',name:'重点与提问识别',Icon:ScanLine}];
+
+function UsageHelp({label,children}){
+  const id=useId(),trigger=useRef(null),timer=useRef(null);
+  const [open,setOpen]=useState(false),[position,setPosition]=useState(null);
+  function show(){clearTimeout(timer.current);setOpen(true);}
+  function hide(){clearTimeout(timer.current);timer.current=setTimeout(()=>setOpen(false),120);}
+  useEffect(()=>()=>clearTimeout(timer.current),[]);
+  useEffect(()=>{
+    if(!open)return;
+    function dismiss(event){if(event.key==='Escape'){event.stopPropagation();clearTimeout(timer.current);setOpen(false);}}
+    document.addEventListener('keydown',dismiss,true);
+    return()=>document.removeEventListener('keydown',dismiss,true);
+  },[open]);
+  useLayoutEffect(()=>{
+    if(!open)return;
+    function place(){const r=trigger.current.getBoundingClientRect();const width=Math.min(260,window.innerWidth-24);setPosition({left:Math.max(12,Math.min(r.left,window.innerWidth-width-12)),width,...(r.bottom+100<window.innerHeight?{top:r.bottom+6}:{bottom:window.innerHeight-r.top+6})});}
+    place();window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
+    return()=>{window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true);};
+  },[open]);
+  return <span className="usage-help">
+    <button ref={trigger} type="button" className="usage-help-trigger" aria-label={t('{name}额度说明',{name:t(label)})} aria-describedby={open?id:undefined} aria-expanded={open} onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide} onClick={()=>{clearTimeout(timer.current);setOpen(true);}} onKeyDown={event=>{if(event.key==='Escape'&&open){event.stopPropagation();clearTimeout(timer.current);setOpen(false);}}}><CircleHelp size={14} aria-hidden="true"/></button>
+    {open&&position&&createPortal(<span id={id} role="tooltip" className="usage-help-tooltip" style={position} onMouseEnter={show} onMouseLeave={hide}>{children}</span>,document.body)}
+  </span>;
+}
 
 function ServiceRow({id,name,Icon}){
   const [result,setResult]=useState(null),[testing,setTesting]=useState(false);
@@ -35,16 +61,16 @@ export function UsageSummary(){
   },[attempt]);
   const rows=[
     {id:'llm',name:'AI 问答',period:'每日额度',percent:usagePercentage(result.usage?.llm?.remaining,result.usage?.llm?.limit),reset:usageResetText(result.usage?.llm?.resetsAt)},
-    {id:'asr',name:'实时转写',period:result.usage?.asr?.period==='lifetime'?'转写体验额度':'每月额度',percent:usagePercentage(result.usage?.asr?.remainingSeconds,result.usage?.asr?.limitSeconds),reset:result.usage?.asr?.period==='lifetime'?t('一次性额度，不会重置'):usageResetText(result.usage?.asr?.resetsAt)},
+    {id:'asr',name:'实时转写',period:result.usage?.asr?.period==='lifetime'?'转写体验额度':'每月额度',percent:usagePercentage(result.usage?.asr?.remainingSeconds,result.usage?.asr?.limitSeconds),reset:result.usage?.asr?.trialCapacityReached?t('请自行部署即问。'):result.usage?.asr?.period==='lifetime'?t('一次性额度，不会重置'):usageResetText(result.usage?.asr?.resetsAt)},
   ];
   const loading=result.status==='loading',unavailable=!loading&&rows.some(row=>row.percent===null||!row.reset);
   return <section className="settings-usage" aria-label={t('使用额度')} aria-busy={loading}>
     <div aria-live="polite">{rows.map(({id,name,period,percent,reset})=>{
-      const text=loading?t('读取中…'):id==='asr'&&result.usage?.asr?.period==='lifetime'?audioRemainingText(result.usage.asr):usageRemainingText(percent);
+      const asr=result.usage?.asr;
+      const text=loading?t('读取中…'):id==='asr'&&asr?.period==='lifetime'&&asr.remainingSeconds>=60&&!asr.trialCapacityReached?t('剩余 {count} 分钟',{count:Math.floor(asr.remainingSeconds/60)}):id==='asr'&&asr?.period==='lifetime'?audioRemainingText(asr):usageRemainingText(percent);
       return <div key={id} className={`settings-usage-row${percent===0?' is-exhausted':''}`}>
-        <div className="settings-usage-heading"><span id={`account-usage-${id}`} className="settings-usage-label">{t(name)}<small>{t(period)}</small></span><strong>{text}</strong></div>
-        {!loading&&percent!==null&&<progress className="settings-usage-progress" max={100} value={percent} aria-labelledby={`account-usage-${id}`} aria-valuetext={text} aria-describedby={reset?`account-usage-${id}-reset`:undefined}/>}
-        {!loading&&percent!==null&&<p id={`account-usage-${id}-reset`}>{reset||t('重置时间暂不可用')}</p>}
+        <div className="settings-usage-heading"><span className="settings-usage-label"><span id={`account-usage-${id}`}>{t(name)}</span>{!loading&&percent!==null&&<UsageHelp label={name}>{t(period)}{id==='asr'&&Number.isFinite(asr?.limitSeconds)&&<> · {t('共 {count} 分钟',{count:Math.floor(asr.limitSeconds/60)})}</>}<br/>{reset||t('重置时间暂不可用')}</UsageHelp>}</span><strong>{text}</strong></div>
+        {!loading&&percent!==null&&!(id==='asr'&&asr?.trialCapacityReached)&&<progress className="settings-usage-progress" max={100} value={percent} aria-labelledby={`account-usage-${id}`} aria-valuetext={text}/>}
       </div>;
     })}</div>
     {unavailable&&<button type="button" className="settings-usage-retry" onClick={()=>setAttempt(value=>value+1)}><RotateCcw size={14} aria-hidden="true"/>{t('重试')}</button>}
@@ -106,7 +132,7 @@ function AccountData({me,legal:initial,locked,onAccountDeleted}){
     try{await api('/account',{method:'DELETE',body:{password,confirmation}});await onAccountDeleted();}
     catch(error){setError(error.message);}finally{setDeleting(false);}
   }
-  if(kind)return <><button className="settings-back" type="button" onClick={()=>setKind(null)}><ArrowLeft size={16}/>{t('返回数据与反馈')}</button><LegalStatus {...result}/><LegalDocument legal={result.legal} kind={kind} showTitle/></>;
+  if(kind)return <><button className="settings-back" type="button" onClick={()=>setKind(null)}><ArrowLeft size={16}/>{t('返回账号管理')}</button><LegalStatus {...result}/><LegalDocument legal={result.legal} kind={kind} showTitle/></>;
   return <div className="account-data">
     <div className="account-data-storage">
       <div className="settings-usage-heading"><span>{t('存储空间')}</span><strong>{storage?`${storageSize(usedBytes)} / ${storageSize(storage.limitBytes)}`:storageError?t('暂不可用'):t('读取中…')}</strong></div>
@@ -132,7 +158,7 @@ function AccountData({me,legal:initial,locked,onAccountDeleted}){
   </div>;
 }
 
-export function SettingsDialog({Modal,jevEnabled=false,deviceId,setDeviceId,devices,setDevices,recording,saving,starting,inputDevice,onApiConfig,onClose}){
+export function SettingsContent({jevEnabled=false,deviceId,setDeviceId,devices,setDevices,recording,saving,starting,inputDevice,onApiConfig}){
   const [reading,setReading]=useState(false),[deviceError,setDeviceError]=useState('');
   const readLock=useRef(false);
   const deviceLocked=recording||saving||starting;
@@ -148,8 +174,7 @@ export function SettingsDialog({Modal,jevEnabled=false,deviceId,setDeviceId,devi
     }catch(e){setDeviceError(e.name==='NotAllowedError'?'麦克风权限未开启，请在浏览器中允许访问后重试。':e.name==='NotFoundError'?'未找到麦克风，请连接设备后重试。':e.message);}
     finally{stream?.getTracks().forEach(t=>t.stop());readLock.current=false;setReading(false);}
   }
-  return <Modal title={t("设置")} className="settings-modal" onClose={onClose}>
-    <div className="settings-page">
+  return <div className="settings-page">
         {onApiConfig&&<section className="settings-section"><button className="settings-account-row" onClick={onApiConfig}><span className="settings-row-label"><KeyRound size={18}/>{t('API 配置')}</span><ChevronRight size={16}/></button></section>}
         <section className="settings-section" aria-labelledby="settings-display"><div className="settings-section-heading"><h3 id="settings-display">{t('显示')}</h3></div><LanguageSelect/></section>
         <section className="settings-section" aria-labelledby="settings-audio">
@@ -160,48 +185,34 @@ export function SettingsDialog({Modal,jevEnabled=false,deviceId,setDeviceId,devi
           {deviceError&&<p className="settings-inline-error" role="alert">{translateMessage(deviceError)}</p>}
         </section>
         <section className="settings-section" aria-labelledby="settings-services"><div className="settings-section-heading"><h3 id="settings-services">{t("课堂功能")}</h3></div>{services.filter(service=>service.id!=='jev'||jevEnabled===true).map(service=><ServiceRow key={service.id} {...service}/>)}</section>
-    </div>
-  </Modal>;
+    </div>;
 }
 
-export function AccountDialog({Modal,me,legal,anchor,recording,saving,starting,busy,onClose,onSettings,onApiConfig,onLogout,onAccountDeleted}){
-  const [page,setPage]=useState('account'),[logoutError,setLogoutError]=useState(''),[loggingOut,setLoggingOut]=useState(false),[success,setSuccess]=useState(''),[position,setPosition]=useState(null);
+export function SettingsDialog({Modal,onClose,...props}){
+  return <SettingsPanel Modal={Modal} title={t('设置')} onClose={onClose}><SettingsContent {...props}/></SettingsPanel>;
+}
+
+export function AccountDialog({Modal,me,legal,anchor,recording,saving,starting,busy,onClose,settingsProps,onApiConfig,onLogout,onAccountDeleted}){
+  const [page,setPage]=useState('account'),[logoutError,setLogoutError]=useState(''),[loggingOut,setLoggingOut]=useState(false),[success,setSuccess]=useState('');
   const content=useRef(null);
   const deviceLocked=recording||saving||starting,logoutLocked=deviceLocked||busy||loggingOut;
   const identity=me.email;
-  useLayoutEffect(()=>{
-    function place(){
-      const r=anchor.getBoundingClientRect(),viewport=window.visualViewport;
-      const vw=viewport?.width||window.innerWidth,vh=viewport?.height||window.innerHeight,top=viewport?.offsetTop||0;
-      const width=Math.min(360,vw-24),beside=r.right+12+width<=vw-12;
-      const left=beside?r.right+12:Math.max(12,Math.min(r.left,vw-width-12));
-      const bottomEdge=Math.max(top+80,Math.min(beside?r.bottom:r.top-12,top+vh-12));
-      setPosition({left,bottom:window.innerHeight-bottomEdge,width,maxHeight:bottomEdge-top-12});
-    }
-    place();window.addEventListener('resize',place);window.visualViewport?.addEventListener('resize',place);window.visualViewport?.addEventListener('scroll',place);
-    return()=>{window.removeEventListener('resize',place);window.visualViewport?.removeEventListener('resize',place);window.visualViewport?.removeEventListener('scroll',place);};
-  },[anchor]);
   useEffect(()=>{content.current?.focus();},[page]);
   function account(message=''){setSuccess(message);setPage('account');}
-  if(!position)return null;
-  return <Modal title={page==='account'?t('账号'):page==='data'?t('数据与反馈'):t('修改密码')} className="account-panel" overlayClassName="account-overlay" position={position} onClose={onClose}>
+  return <SettingsPanel Modal={Modal} title={t('账号')} anchor={anchor} onClose={onClose}>
     <div ref={content} tabIndex={-1} className="settings-page">
-      {page!=='account'&&<button className="settings-back" onClick={()=>account()}><ArrowLeft size={16}/>{t("返回账号")}</button>}
-      {page==='account'&&<div className="settings-account-page">
-        <div className="settings-account-identity"><span className="avatar">{identity[0]}</span><div><small>{t("当前账号")}</small><strong>{identity}</strong></div></div>
+      <div className="settings-account-page">
+        <div className="settings-account-identity"><span className="avatar">{identity[0]}</span><div><strong>{identity}</strong></div><button type="button" className="account-password-icon" aria-label={t('修改密码')} title={t('修改密码')} aria-expanded={page==='password'} aria-controls="account-password-form" onClick={()=>{setSuccess('');setPage(page==='password'?'account':'password');}}><KeyRound size={17}/></button></div>
         {success&&<p className="settings-test-result is-success" role="status"><Check size={15}/><span>{translateMessage(success)}</span></p>}
+        {page==='password'&&<section id="account-password-form" aria-label={t('修改密码')}><PasswordForm onBack={account}/></section>}
         <UsageSummary/>
-        <PaymentInterest/>
+        <PaymentInterest contact={legal?.contact}/>
         <div className="account-menu-actions">
-          <button className="settings-account-row" onClick={onSettings}><span className="settings-row-label"><Settings size={18} strokeWidth={1.7}/>{t("设置")}</span><ChevronRight size={16}/></button>
-          <button className="settings-account-row" onClick={()=>{setSuccess('');setPage('data');}}><span className="settings-row-label"><FileText size={18} strokeWidth={1.7}/>{t('数据与反馈')}</span><ChevronRight size={16}/></button>
+          <details className="account-settings-disclosure"><summary><span className="settings-row-label"><Settings size={18} strokeWidth={1.7}/>{t('设置')}</span><ChevronRight size={16}/></summary><SettingsContent {...settingsProps}/><details className="account-management"><summary>{t('账号管理')}</summary><AccountData me={me} legal={legal} locked={logoutLocked} onAccountDeleted={onAccountDeleted}/></details></details>
           {onApiConfig&&<button className="settings-account-row" onClick={onApiConfig}><span className="settings-row-label"><KeyRound size={18} strokeWidth={1.7}/>{t("API 配置")}</span><ChevronRight size={16}/></button>}
-          <button className="settings-account-row" onClick={()=>{setSuccess('');setPage('password');}}><span className="settings-row-label"><KeyRound size={18} strokeWidth={1.7}/>{t("修改密码")}</span><ChevronRight size={16}/></button>
         </div>
         <div className="settings-logout"><button disabled={logoutLocked} onClick={async()=>{setLoggingOut(true);setLogoutError('');try{await onLogout();}catch(e){setLogoutError(e.message);}finally{setLoggingOut(false);}}}>{loggingOut?<LoaderCircle size={17} className="spin"/>:<LogOut size={17}/>}{t('退出登录')}</button>{logoutLocked&&!loggingOut&&<p className="settings-help">{deviceLocked?t('请等待录音结束并保存后再退出。'):t('请等待当前回答完成后再退出。')}</p>}{logoutError&&<p className="settings-inline-error" role="alert">{translateMessage(logoutError)}</p>}</div>
-      </div>}
-      {page==='password'&&<PasswordForm onBack={account}/>}
-      {page==='data'&&<AccountData me={me} legal={legal} locked={logoutLocked} onAccountDeleted={onAccountDeleted}/>}
+      </div>
     </div>
-  </Modal>;
+  </SettingsPanel>;
 }
